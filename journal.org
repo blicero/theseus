@@ -1,0 +1,40 @@
+# -*- mode: org; fill-column: 78; -*-
+# Time-stamp: <2022-06-30 23:32:20 krylon>
+#
+#+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
+#+TAGS: database(d) design(e), meditation(m)
+#+TAGS: optimize(o) refactor(r) cleanup(c)
+#+TODO: TODO(t)  RESEARCH(r) IMPLEMENT(i) TEST(e) | DONE(d) FAILED(f) CANCELLED(c)
+#+TODO: MEDITATE(m) PLANNING(p) | SUSPENDED(s)
+#+PRIORITIES: A G D
+* Clock
+  #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
+  #+CAPTION: Clock summary at [2022-06-30 Do 23:32]
+  | Headline         | Time   |        |      |
+  |------------------+--------+--------+------|
+  | *Total time*     | *1:22* |        |      |
+  |------------------+--------+--------+------|
+  | *Theseus*        | *1:22* |        |      |
+  | \_  /Components/ |        | /1:22/ |      |
+  | \_    Data types |        |        | 1:01 |
+  | \_    Database   |        |        | 0:21 |
+  #+END:
+* Theseus
+** Components
+*** Data types                                                    :internals:
+    :LOGBOOK:
+    CLOCK: [2022-06-30 Do 22:10]--[2022-06-30 Do 23:11] =>  1:01
+    :END:
+*** Database
+    :LOGBOOK:
+    CLOCK: [2022-06-30 Do 23:11]--[2022-06-30 Do 23:32] =>  0:21
+    :END:
+    Pretty sure I'll use sqlite.
+*** GUI
+    I /could/ use Gtk, or I could be adventurous and use fyne. I tried it
+    before, and it did not work out well, but on the plus side, it is native
+    Go, the cgo overhead would go away.
+
+    But after taking a brief look at my fyne experiment, I'll stick with Gtk.
+** Bugs
+** Questions
