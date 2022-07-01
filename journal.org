@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-01 20:09:01 krylon>
+# Time-stamp: <2022-07-01 22:48:02 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,15 +9,17 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-01 Fr 20:08]
-  | Headline         | Time   |        |      |
-  |------------------+--------+--------+------|
-  | *Total time*     | *3:42* |        |      |
-  |------------------+--------+--------+------|
-  | *Theseus*        | *3:42* |        |      |
-  | \_  /Components/ |        | /3:42/ |      |
-  | \_    Data types |        |        | 1:04 |
-  | \_    Database   |        |        | 2:38 |
+  #+CAPTION: Clock summary at [2022-07-01 Fr 22:47]
+  | Headline          | Time   |        |      |      |
+  |-------------------+--------+--------+------+------|
+  | *Total time*      | *4:51* |        |      |      |
+  |-------------------+--------+--------+------+------|
+  | *Theseus*         | *4:51* |        |      |      |
+  | \_  /Components/  |        | /4:51/ |      |      |
+  | \_    Data types  |        |        | 1:04 |      |
+  | \_    Database    |        |        | 2:38 |      |
+  | \_    Networking? |        |        | 1:09 |      |
+  | \_      Backend   |        |        |      | 1:09 |
   #+END:
 * Theseus
 ** Components
@@ -41,5 +43,9 @@
 *** Networking?                                          :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
+**** Backend
+     :LOGBOOK:
+     CLOCK: [2022-07-01 Fr 20:56]--[2022-07-01 Fr 22:05] =>  1:09
+     :END:
 ** Bugs
 ** Questions
