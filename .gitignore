@@ -27,5 +27,4 @@ build_templates
 *TAGS*
 bak.*
 *.bak
-raconteur
-
+theseus
