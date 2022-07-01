@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-30 21:26:38 krylon>
+// Time-stamp: <2022-07-01 21:22:03 krylon>
 
 // Package logdomain provides constants for log sources.
 package logdomain
@@ -18,6 +18,7 @@ const (
 	DBPool
 	Database
 	GUI
+	Backend
 )
 
 // AllDomains returns a slice of all the known log sources.
@@ -27,5 +28,6 @@ func AllDomains() []ID {
 		DBPool,
 		Database,
 		GUI,
+		Backend,
 	}
 } // func AllDomains() []ID

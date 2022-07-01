@@ -1,5 +1,7 @@
 github.com/blicero/krylib v0.0.0-20210821183726-381c76f977eb h1:tIKHCTcjhmzpkHlS3Nf0E0n0VRgYEjx12fG7QiBaf7g=
 github.com/blicero/krylib v0.0.0-20210821183726-381c76f977eb/go.mod h1:HoeVtZ3wPyRWgB76KOcQ+HdtScp4V9DB76gOgN/YOcw=
+github.com/godbus/dbus v4.1.0+incompatible h1:WqqLRTsQic3apZUK9qC5sGNfXthmPXzUZ7nQPrNITa4=
+github.com/godbus/dbus v4.1.0+incompatible/go.mod h1:/YcGZj5zSblfDWMMoOzV4fas9FZnQYTkDnsGvmh2Grw=
 github.com/hashicorp/logutils v1.0.0 h1:dLEQVugN8vlakKOUE3ihGLTZJRB4j+M2cdTm/ORI65Y=
 github.com/hashicorp/logutils v1.0.0/go.mod h1:QIAnNjmIWmVIIkWDTG1z5v++HQmx9WQRO+LraFDTW64=
 github.com/mattn/go-sqlite3 v1.14.14 h1:qZgc/Rwetq+MtyE18WhzjokPD93dNqLGNT3QJuLvBGw=
