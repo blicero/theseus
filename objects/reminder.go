@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-30 22:37:44 krylon>
+// Time-stamp: <2022-07-01 19:49:01 krylon>
 
 package objects
 
@@ -14,6 +14,8 @@ type Reminder struct {
 	Title       string
 	Description string
 	Timestamp   time.Time
+	Finished    bool
+	UUID        string
 }
 
 // Due returns the Reminder's due time
@@ -30,3 +32,9 @@ func (r *Reminder) IsDue() bool {
 func (r *Reminder) Payload() (string, string) {
 	return r.Title, r.Description
 } // func (r *Reminder) Payload() (string, string)
+
+// UniqueID returns an identifier that is unique across instances.
+// I.e. a UUID.
+func (r *Reminder) UniqueID() string {
+	return r.UUID
+} // func (r *Reminder) UniqueID() string

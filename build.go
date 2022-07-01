@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 02. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-30 21:25:42 krylon>
+// Time-stamp: <2022-07-01 18:17:39 krylon>
 
 // +build ignore
 
@@ -58,25 +58,25 @@ var candidates = map[string][]string{
 	"generate": []string{
 		"common",
 		"logdomain",
-		// "db/query",
+		"database/query",
 	},
 	"test": []string{
-		// "db",
-		// "objects",
+		"database",
+		"objects",
 	},
 	"vet": []string{
 		"common",
-		// "db",
-		// "db/query",
+		"database",
+		"database/query",
 		"logdomain",
-		// "objects",
+		"objects",
 	},
 	"lint": []string{
 		"common",
-		// "db",
-		// "db/query",
+		"database",
+		"database/query",
 		"logdomain",
-		// "objects",
+		"objects",
 	},
 }
 
