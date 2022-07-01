@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-30 23:32:20 krylon>
+# Time-stamp: <2022-07-01 20:09:01 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,24 +9,26 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-30 Do 23:32]
+  #+CAPTION: Clock summary at [2022-07-01 Fr 20:08]
   | Headline         | Time   |        |      |
   |------------------+--------+--------+------|
-  | *Total time*     | *1:22* |        |      |
+  | *Total time*     | *3:42* |        |      |
   |------------------+--------+--------+------|
-  | *Theseus*        | *1:22* |        |      |
-  | \_  /Components/ |        | /1:22/ |      |
-  | \_    Data types |        |        | 1:01 |
-  | \_    Database   |        |        | 0:21 |
+  | *Theseus*        | *3:42* |        |      |
+  | \_  /Components/ |        | /3:42/ |      |
+  | \_    Data types |        |        | 1:04 |
+  | \_    Database   |        |        | 2:38 |
   #+END:
 * Theseus
 ** Components
 *** Data types                                                    :internals:
     :LOGBOOK:
+    CLOCK: [2022-07-01 Fr 17:48]--[2022-07-01 Fr 17:51] =>  0:03
     CLOCK: [2022-06-30 Do 22:10]--[2022-06-30 Do 23:11] =>  1:01
     :END:
 *** Database
     :LOGBOOK:
+    CLOCK: [2022-07-01 Fr 17:51]--[2022-07-01 Fr 20:08] =>  2:17
     CLOCK: [2022-06-30 Do 23:11]--[2022-06-30 Do 23:32] =>  0:21
     :END:
     Pretty sure I'll use sqlite.
@@ -36,5 +38,8 @@
     Go, the cgo overhead would go away.
 
     But after taking a brief look at my fyne experiment, I'll stick with Gtk.
+*** Networking?                                          :feature:meditation:
+    I could make an attempt to build this as a distributed application so I
+    can sync reminders between machines. I think that's a nice idea.
 ** Bugs
 ** Questions
