@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-02 19:06:39 krylon>
+# Time-stamp: <2022-07-02 19:21:13 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -43,10 +43,10 @@
 *** Networking?                                          :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
-**** Backend
-     :LOGBOOK:
-     CLOCK: [2022-07-02 Sa 17:04]--[2022-07-02 Sa 19:06] =>  2:02
-     CLOCK: [2022-07-01 Fr 20:56]--[2022-07-01 Fr 22:05] =>  1:09
-     :END:
+*** Backend
+    :LOGBOOK:
+    CLOCK: [2022-07-02 Sa 17:04]--[2022-07-02 Sa 19:06] =>  2:02
+    CLOCK: [2022-07-01 Fr 20:56]--[2022-07-01 Fr 22:05] =>  1:09
+    :END:
 ** Bugs
 ** Questions
