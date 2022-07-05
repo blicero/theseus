@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 02. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-02 18:42:57 krylon>
+// Time-stamp: <2022-07-05 20:16:51 krylon>
 
 package backend
 
@@ -19,7 +19,7 @@ var back *Daemon
 func TestSummon(t *testing.T) {
 	var err error
 
-	if back, err = Summon(); err != nil {
+	if back, err = Summon("localhost:9596"); err != nil {
 		back = nil
 		t.Errorf("Cannot create Daemon: %s",
 			err.Error())
