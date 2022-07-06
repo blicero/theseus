@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-05 21:38:14 krylon>
+# Time-stamp: <2022-07-06 20:39:39 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,17 +9,17 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-05 Di 21:38]
+  #+CAPTION: Clock summary at [2022-07-06 Mi 20:39]
   | Headline         | Time    |         |      |      |
   |------------------+---------+---------+------+------|
-  | *Total time*     | *11:18* |         |      |      |
+  | *Total time*     | *13:30* |         |      |      |
   |------------------+---------+---------+------+------|
-  | *Theseus*        | *11:18* |         |      |      |
-  | \_  /Components/ |         | /11:18/ |      |      |
+  | *Theseus*        | *13:30* |         |      |      |
+  | \_  /Components/ |         | /13:30/ |      |      |
   | \_    Data types |         |         | 1:04 |      |
   | \_    Database   |         |         | 2:38 |      |
-  | \_    Backend    |         |         | 7:36 |      |
-  | \_      HTTP API |         |         |      | 2:00 |
+  | \_    Backend    |         |         | 9:48 |      |
+  | \_      HTTP API |         |         |      | 4:12 |
   #+END:
 * Theseus
 ** Components
@@ -51,6 +51,7 @@
     :END:
 **** TODO HTTP API
      :LOGBOOK:
+     CLOCK: [2022-07-06 Mi 18:27]--[2022-07-06 Mi 20:39] =>  2:12
      CLOCK: [2022-07-05 Di 19:38]--[2022-07-05 Di 21:38] =>  2:00
      :END:
      I decided to use HTTP as my application layer protocol, because it is
