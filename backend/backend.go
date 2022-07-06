@@ -2,13 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-05 20:16:23 krylon>
+// Time-stamp: <2022-07-06 20:37:20 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
 package backend
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -100,6 +101,7 @@ func Summon(addr string) (*Daemon, error) {
 
 	go d.notifyLoop()
 	go d.dbLoop()
+	go d.serveHTTP()
 
 	return d, nil
 } // func Summon() (*Daemon, error)
@@ -114,11 +116,30 @@ func (d *Daemon) IsAlive() bool {
 } // func (d *Daemon) IsAlive() bool
 
 // Banish clears the Daemon's active flag, telling components to shut down.
-func (d *Daemon) Banish() {
+func (d *Daemon) Banish() error {
+	var (
+		err         error
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*3)
+	)
+	defer cancel()
+
+	if err = d.web.Shutdown(ctx); err != nil {
+		d.log.Printf("[ERROR] Failed to shutdown web server: %s\n",
+			err.Error())
+	}
+
+	if ctx.Err() != nil {
+		err = ctx.Err()
+		d.log.Printf("[ERROR] Failed to gracefully shut down web server: %s\n",
+			ctx.Err().Error())
+		d.web.Close() // nolint: errcheck
+	}
+
 	d.lock.Lock()
 	d.active = false
 	d.lock.Unlock()
-} // func (d *Daemon) Banish()
+	return err
+} // func (d *Daemon) Banish() error
 
 func (d *Daemon) notifyLoop() {
 	defer d.log.Println("[TRACE] Quitting notifyLoop")
