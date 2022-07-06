@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-01 20:06:39 krylon>
+// Time-stamp: <2022-07-06 19:25:21 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -809,6 +809,57 @@ EXEC_QUERY:
 	return items, nil
 } // func (db *Database) ReminderGetFinished() ([]objects.Reminder, error)
 
+// ReminderGetByID looks up a Reminder by its Title
+func (db *Database) ReminderGetByID(id int64) (*objects.Reminder, error) {
+	const qid query.ID = query.ReminderGetByID
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(id); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	if rows.Next() {
+		var (
+			stamp int64
+			r     = &objects.Reminder{ID: id}
+		)
+
+		if err = rows.Scan(&r.Title, &r.Description, &stamp, &r.Finished, &r.UUID); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		r.Timestamp = time.Unix(stamp, 0)
+		r.Finished = true
+
+		return r, nil
+	}
+
+	return nil, nil
+} // func (db *Database) ReminderGetByID(id int64) (*objects.Reminder, error)
+
 // ReminderSetFinished sets the Finished-flag of the given Reminder entry to the
 // given state.
 func (db *Database) ReminderSetFinished(r *objects.Reminder, flag bool) error {
@@ -877,3 +928,139 @@ EXEC_QUERY:
 	status = true
 	return nil
 } // func (db *Database) ReminderSetFinished(r *objects.Reminder, flag bool) error
+
+// ReminderSetTitle sets the Finished-flag of the given Reminder entry to the
+// given state.
+func (db *Database) ReminderSetTitle(r *objects.Reminder, title string) error {
+	const qid query.ID = query.ReminderSetTitle
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(title, r.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot add Reminder %q to database: %s",
+				r.Title,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	r.Title = title
+	status = true
+	return nil
+} // func (db *Database) ReminderSetTitle(r *objects.Reminder, title string) error
+
+func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error {
+	const qid query.ID = query.ReminderSetTimestamp
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(t.Unix(), r.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot add Reminder %q to database: %s",
+				r.Title,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	r.Timestamp = t
+	status = true
+	return nil
+} // func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error

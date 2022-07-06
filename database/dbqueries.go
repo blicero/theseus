@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-01 19:02:43 krylon>
+// Time-stamp: <2022-07-06 18:51:25 krylon>
 
 package database
 
@@ -43,6 +43,16 @@ SELECT
     finished,
     uuid
 FROM reminder
+`,
+	query.ReminderGetByID: `
+SELECT
+    title,
+    description,
+    due,
+    finished,
+    uuid
+FROM reminder
+WHERE id = ?
 `,
 	query.ReminderSetTitle:       "UPDATE reminder SET title = ? WHERE id = ?",
 	query.ReminderSetDescription: "UPDATE reminder SET description = ? WHERE id = ?",
