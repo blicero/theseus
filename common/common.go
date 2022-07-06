@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-30 21:27:09 krylon>
+// Time-stamp: <2022-07-06 22:38:20 krylon>
 
 package common
 
@@ -42,6 +42,7 @@ const (
 	TimestampFormatDate      = "2006-01-02"
 	TimestampFormatTime      = "15:04:05"
 	NetName                  = "udp4"
+	DefaultPort              = 9596
 )
 
 // LogLevels are the names of the log levels supported by the logger.
