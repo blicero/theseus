@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-06 22:46:26 krylon>
+// Time-stamp: <2022-07-07 21:07:35 krylon>
 
 package main
 
@@ -16,6 +16,7 @@ import (
 
 	"github.com/blicero/theseus/backend"
 	"github.com/blicero/theseus/common"
+	"github.com/blicero/theseus/ui"
 )
 
 func main() {
@@ -75,6 +76,29 @@ func main() {
 			}
 		}
 	} else if mode == "frontend" {
-		fmt.Println("You probably want to BUILD the frontend first!")
+		var (
+			gui  *ui.GUI
+			addr = fmt.Sprintf("localhost:%d", common.DefaultPort)
+		)
+
+		fmt.Println("Hello")
+
+		if gui, err = ui.Create(addr); err != nil {
+			fmt.Fprintf(
+				os.Stderr,
+				"Cannot create GUI: %s\n",
+				err.Error())
+			os.Exit(1)
+		}
+
+		gui.Run()
+	} else {
+		fmt.Fprintf(
+			os.Stderr,
+			"Unknown mode %q",
+			mode,
+		)
+
+		os.Exit(1)
 	}
 }

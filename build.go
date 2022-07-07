@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 02. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-07-05 19:46:37 krylon>
+// Time-stamp: <2022-07-07 19:25:33 krylon>
 
 // +build ignore
 
@@ -73,6 +73,7 @@ var candidates = map[string][]string{
 		"database/query",
 		"logdomain",
 		"objects",
+		"ui",
 	},
 	"lint": []string{
 		"common",
@@ -81,6 +82,7 @@ var candidates = map[string][]string{
 		"database/query",
 		"logdomain",
 		"objects",
+		"ui",
 	},
 }
 
