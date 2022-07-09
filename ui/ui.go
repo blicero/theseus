@@ -2,13 +2,16 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-07 21:12:49 krylon>
+// Time-stamp: <2022-07-09 17:20:39 krylon>
 
 package ui
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -16,8 +19,15 @@ import (
 	"github.com/blicero/krylib"
 	"github.com/blicero/theseus/common"
 	"github.com/blicero/theseus/logdomain"
+	"github.com/blicero/theseus/objects"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/pquerna/ffjson/ffjson"
+)
+
+const (
+	defaultBufSize = 65536 // 64 KiB
+	uriGetPending  = "/reminder/pending"
 )
 
 type column struct {
@@ -89,13 +99,16 @@ type GUI struct {
 	menuBar   *gtk.MenuBar
 	statusbar *gtk.Statusbar
 	fMenu     *gtk.Menu // nolint: unused,structcheck
+	web       http.Client
+	reminders map[int64]objects.Reminder
 }
 
 func Create(srv string) (*GUI, error) {
 	var (
 		err error
 		win = &GUI{
-			srv: srv,
+			srv:       srv,
+			reminders: make(map[int64]objects.Reminder),
 		}
 	)
 
@@ -185,6 +198,8 @@ func Create(srv string) (*GUI, error) {
 		common.AppName,
 		common.Version))
 
+	glib.TimeoutAdd(uint(10000), win.fetchReminders)
+
 	return win, nil
 } // func Create(srv string) (*GUI, error)
 
@@ -221,3 +236,84 @@ func (g *GUI) initializeTree() error {
 
 	return nil
 } // func (g *GUI) initializeTree() error
+
+func (g *GUI) fetchReminders() bool {
+	var (
+		err    error
+		rawURL string
+		res    *http.Response
+	)
+
+	krylib.Trace()
+
+	rawURL = fmt.Sprintf("http://%s%s",
+		g.srv,
+		uriGetPending)
+
+	if _, err = url.Parse(rawURL); err != nil {
+		g.log.Printf("[ERROR] Invalid URL %q: %s\n",
+			rawURL,
+			err.Error())
+		return true
+	} else if res, err = g.web.Get(rawURL); err != nil {
+		g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
+			rawURL,
+			err.Error())
+		return true
+	} else if res.StatusCode != 200 {
+		err = fmt.Errorf("Unexpected HTTP status from backend: %s",
+			res.Status)
+		g.log.Printf("[ERROR] %s\n",
+			err.Error())
+		return true
+	}
+
+	defer res.Body.Close() // nolint: errcheck
+
+	var (
+		rsize int
+		body  []byte
+	)
+
+	if res.ContentLength == -1 {
+		body = make([]byte, defaultBufSize)
+	} else {
+		body = make([]byte, res.ContentLength)
+	}
+
+	if rsize, err = res.Body.Read(body); err != nil && err != io.EOF {
+		g.log.Printf("[ERROR] Failed to read HTTP response body: %s\n",
+			err.Error())
+		return true
+	}
+
+	var list = make([]objects.Reminder, 0, 64)
+
+	if err = ffjson.Unmarshal(body[:rsize], &list); err != nil {
+		g.log.Printf(
+			"[ERROR] Cannot de-serialize response from Backend: %s\n%s\n",
+			err.Error(),
+			body,
+		)
+		return true
+	}
+
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	g.store.Clear()
+
+	for _, r := range list {
+		g.reminders[r.ID] = r
+
+		var iter = g.store.Append()
+
+		g.store.Set( // nolint: errcheck
+			iter,
+			[]int{0, 1, 2, 3},
+			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished},
+		)
+	}
+
+	return true
+} // func (g *GUI) fetchReminders() bool
