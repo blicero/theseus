@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-07 21:07:35 krylon>
+// Time-stamp: <2022-07-09 17:16:06 krylon>
 
 package main
 
@@ -71,6 +71,7 @@ func main() {
 			select {
 			case sig := <-sigQ:
 				fmt.Printf("Quitting on signal %s\n", sig)
+				os.Exit(0)
 			case <-ticker.C:
 				continue
 			}
