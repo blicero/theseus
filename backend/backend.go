@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-06 20:37:20 krylon>
+// Time-stamp: <2022-07-12 01:01:46 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,17 +21,18 @@ import (
 	"github.com/blicero/theseus/database"
 	"github.com/blicero/theseus/logdomain"
 	"github.com/blicero/theseus/objects"
-	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/v5"
 	"github.com/gorilla/mux"
 )
 
 const (
-	notifyObj    = "org.freedesktop.Notifications"
-	notifyIntf   = "org.freedesktop.Notifications" // nolint: deadcode,unused,varcheck
-	notifyPath   = "/org/freedesktop/Notifications"
-	notifyMethod = "org.freedesktop.Notifications.Notify"
-	queueDepth   = 5
-	queueTimeout = time.Second * 2
+	notifyObj            = "org.freedesktop.Notifications"
+	notifyIntf           = "org.freedesktop.Notifications" // nolint: deadcode,unused,varcheck
+	notifyPath           = "/org/freedesktop/Notifications"
+	notifyMethod         = "org.freedesktop.Notifications.Notify"
+	queueDepth           = 5
+	queueTimeout         = time.Second * 2
+	defaultReminderDelay = time.Second * 300
 )
 
 // Daemon is the centerpiece of the backend, coordinating between the database, the clients, etc.
@@ -47,6 +49,9 @@ type Daemon struct {
 	listenAddr string
 	idLock     sync.Mutex
 	idCnt      int64
+	signalQ    chan *dbus.Signal
+	nLock      sync.RWMutex
+	pending    map[int64]uint32
 }
 
 // Summon summons a Daemon and returns it. No sacrifice or idolatry is required.
@@ -70,6 +75,7 @@ func Summon(addr string) (*Daemon, error) {
 				".json": "application/json",
 				".html": "text/html",
 			},
+			pending: make(map[int64]uint32),
 		}
 	)
 
@@ -91,11 +97,23 @@ func Summon(addr string) (*Daemon, error) {
 	d.web.ErrorLog = d.log
 	d.web.Handler = d.router
 
+	if err = d.bus.AddMatchSignal(
+		dbus.WithMatchObjectPath("/org/freedesktop/Notifications"),
+		dbus.WithMatchInterface("org.freedesktop.Notifications"),
+	); err != nil {
+		d.log.Printf("[ERROR] Cannot register signals with DBus: %s\n",
+			err.Error())
+		return nil, err
+	}
+
 	if err = d.initWebHandlers(); err != nil {
 		d.log.Printf("[ERROR] Failed to initialize web server: %s\n",
 			err.Error())
 		return nil, err
 	}
+
+	d.signalQ = make(chan *dbus.Signal, 25)
+	d.bus.Signal(d.signalQ)
 
 	// do more stuff?
 
@@ -141,6 +159,37 @@ func (d *Daemon) Banish() error {
 	return err
 } // func (d *Daemon) Banish() error
 
+func (d *Daemon) getNotificationID(id int64) (uint32, bool) {
+	var (
+		nid uint32
+		ok  bool
+	)
+
+	d.nLock.RLock()
+	nid, ok = d.pending[id]
+	d.nLock.RUnlock()
+
+	return nid, ok
+} // func (d *Daemon) getNotificationID(id int64) (uint32, bool)
+
+func (d *Daemon) removePending(id uint32) {
+	d.nLock.Lock()
+	defer d.nLock.Unlock()
+
+	var remID int64
+
+	for rid, nid := range d.pending {
+		if nid == id {
+			remID = rid
+			break
+		}
+	}
+
+	if remID != 0 {
+		delete(d.pending, remID)
+	}
+} // func (d *Daemon) removePending(nid uint32)
+
 func (d *Daemon) notifyLoop() {
 	defer d.log.Println("[TRACE] Quitting notifyLoop")
 
@@ -154,6 +203,37 @@ func (d *Daemon) notifyLoop() {
 		select {
 		case <-tick.C:
 			continue
+		case n := <-d.signalQ:
+			d.log.Printf("[DEBUG] Received signal: %#v\n",
+				n)
+
+			if n.Name == "org.freedesktop.Notifications.NotificationClosed" {
+				var (
+					nid uint32
+					ok  bool
+				)
+
+				if nid, ok = n.Body[0].(uint32); ok {
+					d.removePending(nid)
+				}
+			} else if n.Name == "org.freedesktop.Notifications.ActionInvoked" {
+				var action = n.Body[1].(string)
+				// ... We'll have to deal with it in some way. ;-|
+				d.log.Printf("User clicked %s\n",
+					action)
+
+				switch strings.ToLower(action) {
+				case "delay":
+					// do something!
+					// var newTimestamp = time.Now().Add(defaultReminderDelay)
+
+				case "ok":
+					if err = d.finishNotification(n.Body[0].(uint32)); err != nil {
+						d.log.Printf("[ERROR] Cannot finish Notification: %s\n",
+							err.Error())
+					}
+				}
+			}
 		case m := <-d.Queue:
 			var title, body = m.Payload()
 			d.log.Printf("[DEBUG] Received Notification: %s\n%s\n",
@@ -194,7 +274,12 @@ func (d *Daemon) notify(n objects.Notification) error {
 		"",
 		head,
 		body,
-		[]string{},
+		[]string{
+			"OK",
+			"OK",
+			"Delay",
+			"Delay",
+		},
 		map[string]*dbus.Variant{},
 		0,
 	)
@@ -206,8 +291,69 @@ func (d *Daemon) notify(n objects.Notification) error {
 		return res.Err
 	}
 
+	var ret uint32
+
+	if err = res.Store(&ret); err != nil {
+		d.log.Printf("[ERROR] Cannot store return value of %s: %s\n",
+			notifyMethod,
+			err.Error())
+		return err
+	} else if common.Debug {
+		d.log.Printf("[DEBUG] RESPONSE: %d\n",
+			ret)
+	}
+
+	if r, ok := n.(*objects.Reminder); ok {
+		d.nLock.Lock()
+		d.pending[r.ID] = ret
+		d.nLock.Unlock()
+	}
+
 	return nil
 } // func (d *Daemon) notify(n objects.Notification) error
+
+func (d *Daemon) finishNotification(notID uint32) error {
+	var (
+		err error
+		db  *database.Database
+		rem *objects.Reminder
+		rid int64
+	)
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	d.nLock.RLock()
+	defer d.nLock.RUnlock()
+
+	for nid, did := range d.pending {
+		if nid == notID {
+			rid = did
+			break
+		}
+	}
+
+	if rid == 0 {
+		return nil
+	} else if rem, err = db.ReminderGetByID(rid); err != nil {
+		d.log.Printf("[ERROR] Cannot look up Reminder #%d: %s\n",
+			rid,
+			err.Error())
+		return err
+	} else if rem == nil {
+		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
+			rid)
+		return nil
+	} else if err = db.ReminderSetFinished(rem, true); err != nil {
+		d.log.Printf("[ERROR] Cannot set finished-flag on Reminder %d (%q): %w\n",
+			rid,
+			rem.Title,
+			err)
+		return err
+	}
+
+	return nil
+} // func (d *Daemon) finishNotification(notID uint32) error
 
 func (d *Daemon) dbLoop() {
 	defer d.log.Println("[TRACE] dbLoop is shutting down")
@@ -243,7 +389,9 @@ func (d *Daemon) dbCheck() error {
 	}
 
 	for idx := range reminders {
-		d.Queue <- &reminders[idx]
+		if _, ok := d.getNotificationID(reminders[idx].ID); !ok {
+			d.Queue <- &reminders[idx]
+		}
 	}
 
 	return nil

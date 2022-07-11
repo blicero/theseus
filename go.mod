@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/blicero/krylib v0.0.0-20210821183726-381c76f977eb
-	github.com/godbus/dbus v4.1.0+incompatible
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gotk3/gotk3 v0.6.1
 	github.com/hashicorp/logutils v1.0.0
