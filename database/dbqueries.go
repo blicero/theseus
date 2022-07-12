@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-06 18:51:25 krylon>
+// Time-stamp: <2022-07-12 23:02:58 krylon>
 
 package database
 
@@ -22,7 +22,8 @@ SELECT
     due,
     uuid
 FROM reminder
-WHERE NOT finished
+WHERE finished = 0
+  AND due < ?
 `,
 	query.ReminderGetFinished: `
 SELECT

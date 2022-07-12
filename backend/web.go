@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-06 20:06:26 krylon>
+// Time-stamp: <2022-07-12 23:07:32 krylon>
 
 package backend
 
@@ -109,12 +109,13 @@ func (d *Daemon) handleReminderGetPending(w http.ResponseWriter, r *http.Request
 		db        *database.Database
 		reminders []objects.Reminder
 		buf       []byte
+		deadline  = time.Now().Add(queueTimeout)
 	)
 
 	db = d.pool.Get()
 	defer d.pool.Put(db)
 
-	if reminders, err = db.ReminderGetPending(); err != nil {
+	if reminders, err = db.ReminderGetPending(deadline); err != nil {
 		d.log.Printf("[ERROR] Cannot load Reminders: %s\n",
 			err.Error())
 	}

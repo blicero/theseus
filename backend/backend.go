@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-12 01:01:46 krylon>
+// Time-stamp: <2022-07-12 23:05:58 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -224,14 +224,18 @@ func (d *Daemon) notifyLoop() {
 
 				switch strings.ToLower(action) {
 				case "delay":
-					// do something!
-					// var newTimestamp = time.Now().Add(defaultReminderDelay)
-
+					if err = d.delayNotification(n.Body[0].(uint32)); err != nil {
+						d.log.Printf("[ERROR] Cannot delay Notification: %s\n",
+							err.Error())
+					}
 				case "ok":
 					if err = d.finishNotification(n.Body[0].(uint32)); err != nil {
 						d.log.Printf("[ERROR] Cannot finish Notification: %s\n",
 							err.Error())
 					}
+				default:
+					d.log.Printf("[ERROR] Unknown action %q from Notification\n",
+						action)
 				}
 			}
 		case m := <-d.Queue:
@@ -327,8 +331,8 @@ func (d *Daemon) finishNotification(notID uint32) error {
 	defer d.nLock.RUnlock()
 
 	for nid, did := range d.pending {
-		if nid == notID {
-			rid = did
+		if did == notID {
+			rid = nid
 			break
 		}
 	}
@@ -345,15 +349,65 @@ func (d *Daemon) finishNotification(notID uint32) error {
 			rid)
 		return nil
 	} else if err = db.ReminderSetFinished(rem, true); err != nil {
-		d.log.Printf("[ERROR] Cannot set finished-flag on Reminder %d (%q): %w\n",
+		d.log.Printf("[ERROR] Cannot set finished-flag on Reminder %d (%q): %s\n",
 			rid,
 			rem.Title,
-			err)
+			err.Error())
 		return err
 	}
 
 	return nil
 } // func (d *Daemon) finishNotification(notID uint32) error
+
+func (d *Daemon) delayNotification(nID uint32) error {
+	var (
+		err       error
+		db        *database.Database
+		rem       *objects.Reminder
+		rid       int64
+		timestamp = time.Now().Add(defaultReminderDelay)
+	)
+
+	d.log.Printf("[DEBUG] Delay Notification %d until %s\n",
+		nID,
+		timestamp.Format(common.TimestampFormat))
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	d.nLock.RLock()
+	defer d.nLock.RUnlock()
+
+	for nid, did := range d.pending {
+		if did == nID {
+			rid = nid
+			break
+		}
+	}
+
+	if rid == 0 {
+		d.log.Printf("[INFO] Did not find database ID for Notification ID %d\n",
+			nID)
+		return nil
+	} else if rem, err = db.ReminderGetByID(rid); err != nil {
+		d.log.Printf("[ERROR] Cannot look up Reminder #%d: %s\n",
+			rid,
+			err.Error())
+		return err
+	} else if rem == nil {
+		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
+			rid)
+		return nil
+	} else if err = db.ReminderSetTimestamp(rem, timestamp); err != nil {
+		d.log.Printf("[ERROR] Cannot delay Reminder %d (%q): %s\n",
+			rid,
+			rem.Title,
+			err.Error())
+		return err
+	}
+
+	return nil
+} // func (d *Daemon) delayNotification(nID uint32) error
 
 func (d *Daemon) dbLoop() {
 	defer d.log.Println("[TRACE] dbLoop is shutting down")
@@ -377,12 +431,13 @@ func (d *Daemon) dbCheck() error {
 		err       error
 		db        *database.Database
 		reminders []objects.Reminder
+		deadline  = time.Now().Add(queueTimeout)
 	)
 
 	db = d.pool.Get()
 	defer d.pool.Put(db)
 
-	if reminders, err = db.ReminderGetPending(); err != nil {
+	if reminders, err = db.ReminderGetPending(deadline); err != nil {
 		d.log.Printf("[ERROR] Cannot get pending Reminders from Database: %s\n",
 			err.Error())
 		return err

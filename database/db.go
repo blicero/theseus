@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-06 19:25:21 krylon>
+// Time-stamp: <2022-07-12 23:04:58 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -704,7 +704,7 @@ EXEC_QUERY:
 
 // ReminderGetPending fetches all Reminder entries from the database
 // that have not been marked as finished.
-func (db *Database) ReminderGetPending() ([]objects.Reminder, error) {
+func (db *Database) ReminderGetPending(t time.Time) ([]objects.Reminder, error) {
 	const qid query.ID = query.ReminderGetPending
 	var (
 		err  error
@@ -723,7 +723,7 @@ func (db *Database) ReminderGetPending() ([]objects.Reminder, error) {
 	var rows *sql.Rows
 
 EXEC_QUERY:
-	if rows, err = stmt.Query(); err != nil {
+	if rows, err = stmt.Query(t.Unix()); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
