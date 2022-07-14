@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-12 23:22:58 krylon>
+# Time-stamp: <2022-07-14 19:09:06 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,19 +9,19 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-12 Di 23:22]
-  | Headline              | Time      |           |       |       |
-  |-----------------------+-----------+-----------+-------+-------|
-  | *Total time*          | *1d 9:14* |           |       |       |
-  |-----------------------+-----------+-----------+-------+-------|
-  | *Theseus*             | *1d 9:14* |           |       |       |
-  | \_  /Components/      |           | /1d 9:14/ |       |       |
-  | \_    Data types      |           |           |  1:04 |       |
-  | \_    Database        |           |           |  2:38 |       |
-  | \_    Backend         |           |           | 22:01 |       |
-  | \_      Notifications |           |           |       | 12:12 |
-  | \_      HTTP API      |           |           |       |  4:12 |
-  | \_    Frontend        |           |           |  7:31 |       |
+  #+CAPTION: Clock summary at [2022-07-14 Do 19:08]
+  | Headline              | Time       |            |       |       |
+  |-----------------------+------------+------------+-------+-------|
+  | *Total time*          | *1d 11:53* |            |       |       |
+  |-----------------------+------------+------------+-------+-------|
+  | *Theseus*             | *1d 11:53* |            |       |       |
+  | \_  /Components/      |            | /1d 11:53/ |       |       |
+  | \_    Data types      |            |            |  1:04 |       |
+  | \_    Database        |            |            |  2:38 |       |
+  | \_    Backend         |            |            | 22:01 |       |
+  | \_      Notifications |            |            |       | 12:12 |
+  | \_      HTTP API      |            |            |       |  4:12 |
+  | \_    Frontend        |            |            | 10:10 |       |
   #+END:
 * Theseus
 ** Components
@@ -77,6 +77,7 @@
      - Get new Reminders
 *** Frontend                                                             :ui:
     :LOGBOOK:
+    CLOCK: [2022-07-13 Mi 18:51]--[2022-07-13 Mi 21:30] =>  2:39
     CLOCK: [2022-07-09 Sa 17:05]--[2022-07-09 Sa 17:26] =>  0:21
     CLOCK: [2022-07-08 Fr 22:19]--[2022-07-08 Fr 23:26] =>  1:07
     CLOCK: [2022-07-08 Fr 18:42]--[2022-07-08 Fr 21:43] =>  3:01
