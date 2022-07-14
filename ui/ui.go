@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-09 17:20:39 krylon>
+// Time-stamp: <2022-07-13 21:04:42 krylon>
 
 package ui
 
@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	defaultBufSize = 65536 // 64 KiB
-	uriGetPending  = "/reminder/pending"
+	defaultBufSize = 65536               // 64 KiB
+	uriGetPending  = "/reminder/pending" // nolint: deadcode,unused,varcheck
+	uriGetAll      = "/reminder/all"
 )
 
 type column struct {
@@ -190,6 +191,10 @@ func Create(srv string) (*GUI, error) {
 		win.log.Printf("[ERROR] Failed to initialize TreeView: %s\n",
 			err.Error())
 		return nil, err
+	} else if err = win.initMenu(); err != nil {
+		win.log.Printf("[ERROR] Failed to intialize MenuBar: %s\n",
+			err.Error())
+		return nil, err
 	}
 
 	win.win.ShowAll()
@@ -202,6 +207,64 @@ func Create(srv string) (*GUI, error) {
 
 	return win, nil
 } // func Create(srv string) (*GUI, error)
+
+func (g *GUI) initMenu() error {
+	var (
+		err                                  error
+		fMenu, rMenu                         *gtk.Menu
+		srvItem, quitItem, addItem, editItem *gtk.MenuItem
+		fItem, rItem                         *gtk.MenuItem
+	)
+
+	if fMenu, err = gtk.MenuNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create Menu File: %s\n",
+			err.Error())
+		return err
+	} else if rMenu, err = gtk.MenuNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create Menu Reminder: %s\n",
+			err.Error())
+		return err
+	} else if srvItem, err = gtk.MenuItemNewWithMnemonic("Choose _Server"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item SRV: %s\n",
+			err.Error())
+		return err
+	} else if quitItem, err = gtk.MenuItemNewWithMnemonic("_Quit"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item QUIT: %s\n",
+			err.Error())
+		return err
+	} else if addItem, err = gtk.MenuItemNewWithMnemonic("_Add Reminder"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item itemAdd: %s\n",
+			err.Error())
+		return err
+	} else if editItem, err = gtk.MenuItemNewWithMnemonic("_Edit Reminder"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item EDIT: %s\n",
+			err.Error())
+		return err
+	} else if fItem, err = gtk.MenuItemNewWithMnemonic("_File"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item FILE: %s\n",
+			err.Error())
+		return err
+	} else if rItem, err = gtk.MenuItemNewWithMnemonic("_Reminder"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item REMINDER: %s\n",
+			err.Error())
+		return err
+	}
+
+	quitItem.Connect("activate", gtk.MainQuit)
+
+	fMenu.Append(srvItem)
+	fMenu.Append(quitItem)
+	rMenu.Append(addItem)
+	rMenu.Append(editItem)
+
+	g.menuBar.Append(fItem)
+	g.menuBar.Append(rItem)
+
+	fItem.SetSubmenu(fMenu)
+	rItem.SetSubmenu(rMenu)
+
+	return nil
+} // func (g *GUI) initMenu() error
 
 // Run executes gtk's main event loop.
 func (g *GUI) Run() {
@@ -248,7 +311,7 @@ func (g *GUI) fetchReminders() bool {
 
 	rawURL = fmt.Sprintf("http://%s%s",
 		g.srv,
-		uriGetPending)
+		uriGetAll)
 
 	if _, err = url.Parse(rawURL); err != nil {
 		g.log.Printf("[ERROR] Invalid URL %q: %s\n",
