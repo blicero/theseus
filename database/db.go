@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-12 23:04:58 krylon>
+// Time-stamp: <2022-07-13 20:06:50 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -729,6 +729,9 @@ EXEC_QUERY:
 			goto EXEC_QUERY
 		}
 
+		db.log.Printf("[ERROR] Failed to load pending Reminders: %s\n",
+			err.Error())
+
 		return nil, err
 	}
 
@@ -754,6 +757,59 @@ EXEC_QUERY:
 
 	return items, nil
 } // func (db *Database) ReminderGetPending() ([]objects.Reminder, error)
+
+func (db *Database) ReminderGetAll() ([]objects.Reminder, error) {
+	const qid query.ID = query.ReminderGetAll
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load all Reminders: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var items = make([]objects.Reminder, 0)
+
+	for rows.Next() {
+		var (
+			stamp int64
+			r     objects.Reminder
+		)
+
+		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.Finished, &r.UUID); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		r.Timestamp = time.Unix(stamp, 0)
+
+		items = append(items, r)
+	}
+
+	return items, nil
+} // func (db *Database) ReminderGetAll() ([]objects.Reminder, error)
 
 // ReminderGetFinished returns all the Reminder entries that have already passed
 // and been acknowledged by the user.

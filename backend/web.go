@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-12 23:07:32 krylon>
+// Time-stamp: <2022-07-13 19:20:55 krylon>
 
 package backend
 
@@ -21,6 +21,7 @@ import (
 func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/add", d.handleReminderAdd)
 	d.router.HandleFunc("/reminder/pending", d.handleReminderGetPending)
+	d.router.HandleFunc("/reminder/all", d.handleReminderGetAll)
 	d.router.HandleFunc("/reminder/edit/title", d.handleReminderSetTitle)
 	d.router.HandleFunc("/reminder/edit/timestamp", d.handleReminderSetTimestamp)
 
@@ -132,6 +133,38 @@ func (d *Daemon) handleReminderGetPending(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(200)
 	w.Write(buf) // nolint: errcheck
 } // func (d *Daemon) handleReminderGetPending(w http.ResponseWriter, r *http.Request)
+
+func (d *Daemon) handleReminderGetAll(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err       error
+		db        *database.Database
+		reminders []objects.Reminder
+		buf       []byte
+	)
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if reminders, err = db.ReminderGetAll(); err != nil {
+		d.log.Printf("[ERROR] Cannot load Reminders: %s\n",
+			err.Error())
+
+	} else if buf, err = ffjson.Marshal(reminders); err != nil {
+		d.log.Printf("[ERROR] Cannot serialize Reminder list: %s\n",
+			err.Error())
+
+	}
+
+	defer ffjson.Pool(buf)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write(buf) // nolint: errcheck
+} // func (d *Daemon) handleReminderGetAll(w http.ResponseWriter, r *http.Request)
 
 func (d *Daemon) handleReminderSetTitle(w http.ResponseWriter, r *http.Request) {
 	d.log.Printf("[TRACE] Handle %s from %s\n",
