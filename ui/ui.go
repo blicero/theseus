@@ -2,11 +2,12 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-13 21:04:42 krylon>
+// Time-stamp: <2022-07-15 17:25:24 krylon>
 
 package ui
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -29,6 +30,7 @@ const (
 	defaultBufSize = 65536               // 64 KiB
 	uriGetPending  = "/reminder/pending" // nolint: deadcode,unused,varcheck
 	uriGetAll      = "/reminder/all"
+	uriReminderAdd = "/reminder/add"
 )
 
 type column struct {
@@ -104,6 +106,8 @@ type GUI struct {
 	reminders map[int64]objects.Reminder
 }
 
+// Create creates a new GUI instance ready to be used. Call the Run() method
+// to display the Window and execute the gtk event loop.
 func Create(srv string) (*GUI, error) {
 	var (
 		err error
@@ -187,7 +191,7 @@ func Create(srv string) (*GUI, error) {
 
 	win.win.Connect("destroy", gtk.MainQuit)
 
-	if err = win.initializeTree(); err != nil {
+	if err = win.initTree(); err != nil {
 		win.log.Printf("[ERROR] Failed to initialize TreeView: %s\n",
 			err.Error())
 		return nil, err
@@ -207,6 +211,23 @@ func Create(srv string) (*GUI, error) {
 
 	return win, nil
 } // func Create(srv string) (*GUI, error)
+
+// Run executes gtk's main event loop.
+func (g *GUI) Run() {
+	go func() {
+		var cnt = 0
+		for {
+			time.Sleep(time.Second)
+			cnt++
+			var msg = fmt.Sprintf("%s: Tick #%d",
+				time.Now().Format(common.TimestampFormat),
+				cnt)
+			g.statusbar.Push(666, msg)
+		}
+	}()
+
+	gtk.Main()
+} // func (w *RWin) Run()
 
 func (g *GUI) initMenu() error {
 	var (
@@ -251,6 +272,8 @@ func (g *GUI) initMenu() error {
 	}
 
 	quitItem.Connect("activate", gtk.MainQuit)
+	srvItem.Connect("activate", g.setServer)
+	addItem.Connect("activate", g.addReminder)
 
 	fMenu.Append(srvItem)
 	fMenu.Append(quitItem)
@@ -266,24 +289,7 @@ func (g *GUI) initMenu() error {
 	return nil
 } // func (g *GUI) initMenu() error
 
-// Run executes gtk's main event loop.
-func (g *GUI) Run() {
-	go func() {
-		var cnt = 0
-		for {
-			time.Sleep(time.Second)
-			cnt++
-			var msg = fmt.Sprintf("%s: Tick #%d",
-				time.Now().Format(common.TimestampFormat),
-				cnt)
-			g.statusbar.Push(666, msg)
-		}
-	}()
-
-	gtk.Main()
-} // func (w *RWin) Run()
-
-func (g *GUI) initializeTree() error {
+func (g *GUI) initTree() error {
 	var (
 		err error
 		sel *gtk.TreeSelection
@@ -380,3 +386,291 @@ func (g *GUI) fetchReminders() bool {
 
 	return true
 } // func (g *GUI) fetchReminders() bool
+
+func (g *GUI) setServer() {
+	var (
+		err   error
+		dlg   *gtk.Dialog
+		entry *gtk.Entry
+		lbl   *gtk.Label
+		dbox  *gtk.Box
+		grid  *gtk.Grid
+	)
+
+	if dlg, err = gtk.DialogNewWithButtons(
+		"Choose Server",
+		g.win,
+		gtk.DIALOG_MODAL,
+		[]any{
+			"_Cancel",
+			gtk.RESPONSE_CANCEL,
+			"_OK",
+			gtk.RESPONSE_OK,
+		},
+	); err != nil {
+		g.log.Printf("[ERROR] Failed to create Dialog: %s\n",
+			err.Error())
+		return
+	}
+
+	defer dlg.Close()
+
+	if grid, err = gtk.GridNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create gtk.Grid: %s\n",
+			err.Error())
+		return
+	} else if lbl, err = gtk.LabelNew("Server:"); err != nil {
+		g.log.Printf("[ERROR] Cannot create gtk.Label: %s\n",
+			err.Error())
+		return
+	} else if entry, err = gtk.EntryNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create gtk.Entry: %s\n",
+			err.Error())
+		return
+	} else if dbox, err = dlg.GetContentArea(); err != nil {
+		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog: %s\n",
+			err.Error())
+		return
+	}
+
+	grid.InsertColumn(0)
+	grid.InsertColumn(1)
+	grid.InsertRow(0)
+
+	grid.Attach(lbl, 0, 0, 1, 1)
+	grid.Attach(entry, 0, 1, 1, 1)
+
+	dbox.PackStart(grid, true, true, 0)
+	dlg.ShowAll()
+
+	var res = dlg.Run()
+
+	switch res {
+	case gtk.RESPONSE_NONE:
+		fallthrough
+	case gtk.RESPONSE_DELETE_EVENT:
+		fallthrough
+	case gtk.RESPONSE_CLOSE:
+		fallthrough
+	case gtk.RESPONSE_CANCEL:
+		g.log.Println("[DEBUG] User changed their mind about adding a Program. Fine with me.")
+		return
+	case gtk.RESPONSE_OK:
+		// 's ist los, Hund?
+	default:
+		g.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
+			res)
+		return
+	}
+
+	var srv string
+
+	if srv, err = entry.GetText(); err != nil {
+		g.log.Printf("[ERROR] Cannot get Text from Entry: %s\n",
+			err.Error())
+		return
+	}
+
+	g.srv = srv
+} // func (g *GUI) setServer()
+
+func (g *GUI) addReminder() {
+	var (
+		err                                error
+		dlg                                *gtk.Dialog
+		dbox                               *gtk.Box
+		grid                               *gtk.Grid
+		cal                                *gtk.Calendar
+		titleEntry, bodyEntry              *gtk.Entry
+		hourInput, minuteInput             *gtk.SpinButton
+		timeLbl, sepLbl, titleLbl, bodyLbl *gtk.Label
+	)
+
+	if dlg, err = gtk.DialogNewWithButtons(
+		"Choose Server",
+		g.win,
+		gtk.DIALOG_MODAL,
+		[]any{
+			"_Cancel",
+			gtk.RESPONSE_CANCEL,
+			"_OK",
+			gtk.RESPONSE_OK,
+		},
+	); err != nil {
+		g.log.Printf("[ERROR] Failed to create Dialog: %s\n",
+			err.Error())
+		return
+	}
+
+	defer dlg.Close()
+
+	if _, err = dlg.AddButton("_OK", gtk.RESPONSE_OK); err != nil {
+		g.log.Printf("[ERROR] Cannot add OK button to dialog: %s\n",
+			err.Error())
+		return
+	} else if grid, err = gtk.GridNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create gtk.Grid: %s\n",
+			err.Error())
+		return
+	} else if cal, err = gtk.CalendarNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create gtk.Calendar: %s\n",
+			err.Error())
+	} else if hourInput, err = gtk.SpinButtonNewWithRange(0, 23, 1); err != nil {
+		g.log.Printf("[ERROR] Cannot greate hourInput: %s\n",
+			err.Error())
+		return
+	} else if minuteInput, err = gtk.SpinButtonNewWithRange(0, 59, 1); err != nil {
+		g.log.Printf("[ERROR] Cannot greate minuteInput: %s\n",
+			err.Error())
+		return
+	} else if timeLbl, err = gtk.LabelNew("Time"); err != nil {
+		g.log.Printf("[ERROR] Cannot create time label: %s\n",
+			err.Error())
+		return
+	} else if sepLbl, err = gtk.LabelNew(":"); err != nil {
+		g.log.Printf("[ERROR] Cannot create separator label: %s\n",
+			err.Error())
+		return
+	} else if titleLbl, err = gtk.LabelNew("Title:"); err != nil {
+		g.log.Printf("[ERROR] Cannot create Title label: %s\n",
+			err.Error())
+		return
+	} else if bodyLbl, err = gtk.LabelNew("Description:"); err != nil {
+		g.log.Printf("[ERROR] Cannot create Body Label: %s\n",
+			err.Error())
+		return
+	} else if titleEntry, err = gtk.EntryNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create Entry for title: %s\n",
+			err.Error())
+		return
+	} else if bodyEntry, err = gtk.EntryNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create Entry for Body: %s\n",
+			err.Error())
+		return
+	} else if dbox, err = dlg.GetContentArea(); err != nil {
+		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog: %s\n",
+			err.Error())
+		return
+	}
+
+	grid.InsertColumn(0)
+	grid.InsertColumn(1)
+	grid.InsertColumn(2)
+	grid.InsertColumn(3)
+	grid.InsertRow(0)
+	grid.InsertRow(1)
+	grid.InsertRow(2)
+	grid.InsertRow(3)
+
+	grid.Attach(cal, 0, 0, 4, 1)
+	grid.Attach(timeLbl, 0, 1, 1, 1)
+	grid.Attach(hourInput, 1, 1, 1, 1)
+	grid.Attach(sepLbl, 2, 1, 1, 1)
+	grid.Attach(minuteInput, 3, 1, 1, 1)
+	grid.Attach(titleLbl, 0, 2, 1, 1)
+	grid.Attach(titleEntry, 1, 2, 3, 1)
+	grid.Attach(bodyLbl, 0, 3, 1, 1)
+	grid.Attach(bodyEntry, 1, 3, 3, 1)
+
+	dbox.PackStart(grid, true, true, 0)
+	dlg.ShowAll()
+
+	var res = dlg.Run()
+
+	switch res {
+	case gtk.RESPONSE_NONE:
+		fallthrough
+	case gtk.RESPONSE_DELETE_EVENT:
+		fallthrough
+	case gtk.RESPONSE_CLOSE:
+		fallthrough
+	case gtk.RESPONSE_CANCEL:
+		g.log.Println("[DEBUG] User changed their mind about adding a Program. Fine with me.")
+		return
+	case gtk.RESPONSE_OK:
+		// 's ist los, Hund?
+		g.log.Println("[TRACE] Input was successful")
+	default:
+		g.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
+			res)
+		return
+	}
+
+	var (
+		year, month, day uint
+		hour, min        int
+		r                objects.Reminder
+	)
+
+	year, month, day = cal.GetDate()
+	hour = hourInput.GetValueAsInt()
+	min = minuteInput.GetValueAsInt()
+
+	r.Timestamp = time.Date(
+		int(year),
+		time.Month(month+1),
+		int(day),
+		hour,
+		min,
+		0,
+		0,
+		time.Local)
+	r.Title, _ = titleEntry.GetText()
+	r.Description, _ = bodyEntry.GetText()
+	// r.UUID = common.GetUUID()
+
+	// g.log.Printf("[DEBUG] Time = %4d-%02d-%02d %2d:%2d\n",
+	// 	year,
+	// 	month,
+	// 	day,
+	// 	hour,
+	// 	min)
+
+	g.log.Printf("[DEBUG] Reminder: %#v\n",
+		&r)
+
+	var (
+		reply    *http.Response
+		response objects.Response
+		buf      bytes.Buffer
+		addr     = fmt.Sprintf("http://%s%s",
+			g.srv,
+			uriReminderAdd)
+		payload = make(url.Values)
+	)
+
+	payload["title"] = []string{r.Title}
+	payload["body"] = []string{r.Description}
+	payload["time"] = []string{r.Timestamp.Format(time.RFC3339)}
+
+	if reply, err = g.web.PostForm(addr, payload); err != nil {
+		g.log.Printf("[ERROR] Failed to submit new Reminder to Backend: %s\n",
+			err.Error())
+		return
+	} else if reply.StatusCode != 200 {
+		g.log.Printf("[ERROR] Backend responds with status %s\n",
+			reply.Status)
+		return
+	} else if _, err = io.Copy(&buf, reply.Body); err != nil {
+		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
+			err.Error())
+		return
+	} else if err = ffjson.Unmarshal(buf.Bytes(), &response); err != nil {
+		g.log.Printf("[ERROR] Cannot de-serialize Response from JSON: %s\n",
+			err.Error())
+		return
+	}
+
+	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
+		response)
+
+	if response.Status {
+		var iter = g.store.Append()
+
+		g.store.Set( // nolint: errcheck
+			iter,
+			[]int{0, 1, 2, 3},
+			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished},
+		)
+	}
+} // func (g *GUI) addReminder()
