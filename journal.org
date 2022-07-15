@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-15 17:45:02 krylon>
+# Time-stamp: <2022-07-15 22:05:52 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,19 +9,19 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-15 Fr 17:44]
+  #+CAPTION: Clock summary at [2022-07-15 Fr 22:05]
   | Headline              | Time       |            |       |       |
   |-----------------------+------------+------------+-------+-------|
-  | *Total time*          | *1d 17:58* |            |       |       |
+  | *Total time*          | *1d 19:58* |            |       |       |
   |-----------------------+------------+------------+-------+-------|
-  | *Theseus*             | *1d 17:58* |            |       |       |
-  | \_  /Components/      |            | /1d 17:58/ |       |       |
+  | *Theseus*             | *1d 19:58* |            |       |       |
+  | \_  /Components/      |            | /1d 19:58/ |       |       |
   | \_    Data types      |            |            |  1:04 |       |
   | \_    Database        |            |            |  2:38 |       |
   | \_    Backend         |            |            | 22:01 |       |
   | \_      Notifications |            |            |       | 12:12 |
   | \_      HTTP API      |            |            |       |  4:12 |
-  | \_    Frontend        |            |            | 16:15 |       |
+  | \_    Frontend        |            |            | 18:15 |       |
   #+END:
 * Theseus
 ** Components
@@ -77,6 +77,7 @@
      - Get new Reminders
 *** Frontend                                                             :ui:
     :LOGBOOK:
+    CLOCK: [2022-07-15 Fr 20:05]--[2022-07-15 Fr 22:05] =>  2:00
     CLOCK: [2022-07-15 Fr 15:10]--[2022-07-15 Fr 17:44] =>  2:34
     CLOCK: [2022-07-14 Do 19:13]--[2022-07-14 Do 22:44] =>  3:31
     CLOCK: [2022-07-13 Mi 18:51]--[2022-07-13 Mi 21:30] =>  2:39
