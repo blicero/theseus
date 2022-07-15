@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-15 17:25:24 krylon>
+// Time-stamp: <2022-07-15 21:01:15 krylon>
 
 package ui
 
@@ -617,14 +617,6 @@ func (g *GUI) addReminder() {
 		time.Local)
 	r.Title, _ = titleEntry.GetText()
 	r.Description, _ = bodyEntry.GetText()
-	// r.UUID = common.GetUUID()
-
-	// g.log.Printf("[DEBUG] Time = %4d-%02d-%02d %2d:%2d\n",
-	// 	year,
-	// 	month,
-	// 	day,
-	// 	hour,
-	// 	min)
 
 	g.log.Printf("[DEBUG] Reminder: %#v\n",
 		&r)
@@ -651,7 +643,13 @@ func (g *GUI) addReminder() {
 		g.log.Printf("[ERROR] Backend responds with status %s\n",
 			reply.Status)
 		return
-	} else if _, err = io.Copy(&buf, reply.Body); err != nil {
+	} else if reply.Close {
+		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
+			reply.Request.URL)
+		defer reply.Body.Close() // nolint: errcheck
+	}
+
+	if _, err = io.Copy(&buf, reply.Body); err != nil {
 		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
 			err.Error())
 		return
