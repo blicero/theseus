@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-13 19:20:55 krylon>
+// Time-stamp: <2022-07-19 00:10:11 krylon>
 
 package backend
 
@@ -24,6 +24,7 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/all", d.handleReminderGetAll)
 	d.router.HandleFunc("/reminder/edit/title", d.handleReminderSetTitle)
 	d.router.HandleFunc("/reminder/edit/timestamp", d.handleReminderSetTimestamp)
+	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/update", d.handleReminderUpdate)
 
 	return nil
 } // func (d *Daemon) initWebHandlers() error
@@ -300,6 +301,81 @@ func (d *Daemon) handleReminderSetTimestamp(w http.ResponseWriter, r *http.Reque
 SEND_RESPONSE:
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) handleReminderSetTimestamp(w http.ResponseWriter, r *http.Request)
+
+func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err                                 error
+		db                                  *database.Database
+		id                                  int64
+		t                                   time.Time
+		idstr, tstr, titleStr, bodyStr, msg string
+		rem                                 *objects.Reminder
+		res                                 = objects.Response{ID: d.getID()}
+		txStatus                            bool
+	)
+
+	if err = r.ParseForm(); err != nil {
+		msg = fmt.Sprintf("Cannot parse form data: %s", err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	}
+
+	idstr = r.FormValue("id")
+	tstr = r.FormValue("timestamp")
+	titleStr = r.FormValue("title")
+	bodyStr = r.FormValue("body")
+
+	if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
+		msg = fmt.Sprintf("Cannot parse ID %q: %s",
+			idstr,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if t, err = time.Parse(time.RFC3339, tstr); err != nil {
+		msg = fmt.Sprintf("Cannot parse timestamp %q: %s",
+			tstr,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	}
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if rem, err = db.ReminderGetByID(id); err != nil {
+		msg = fmt.Sprintf("Failed to look up Reminder #%d: %s",
+			id,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if rem == nil {
+		msg = fmt.Sprintf("Could not find Reminder #%d in database", id)
+		d.log.Printf("[DEBUG] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if err = db.Begin(); err != nil {
+		msg = fmt.Sprintf("Error starting transaction: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	}
+
+	if durAbs(rem.Timestamp.Sub(t)) > time.Minute {
+
+	}
+
+SEND_RESPONSE:
+	d.sendResponseJSON(w, &res)
+} // func (d *Daemon) hanbdleReminderUpdate(w http.ResponseWriter, r *http.Request)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// Helpers //////////////////////////////////////////////////////////////////////////////////////
