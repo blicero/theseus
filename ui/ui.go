@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-18 22:19:04 krylon>
+// Time-stamp: <2022-07-20 19:17:39 krylon>
 
 package ui
 
@@ -275,6 +275,7 @@ func (g *GUI) initMenu() error {
 	quitItem.Connect("activate", gtk.MainQuit)
 	srvItem.Connect("activate", g.setServer)
 	addItem.Connect("activate", g.reminderAdd)
+	editItem.Connect("activate", g.reminderEdit)
 
 	fMenu.Append(srvItem)
 	fMenu.Append(quitItem)
@@ -694,6 +695,8 @@ BEGIN:
 			[]int{0, 1, 2, 3},
 			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished},
 		)
+
+		g.reminders[r.ID] = r
 	}
 } // func (g *GUI) reminderAdd()
 
@@ -703,6 +706,7 @@ BEGIN:
 func (g *GUI) reminderEdit() {
 	var (
 		err                                error
+		r                                  objects.Reminder
 		msg                                string
 		sel                                *gtk.TreeSelection
 		iter                               *gtk.TreeIter
@@ -717,8 +721,6 @@ func (g *GUI) reminderEdit() {
 		hourInput, minuteInput             *gtk.SpinButton
 		timeLbl, sepLbl, titleLbl, bodyLbl *gtk.Label
 		id                                 int64
-		title, tstr                        string
-		timestamp                          time.Time
 		gval                               *glib.Value
 		rval                               any
 	)
@@ -750,50 +752,14 @@ func (g *GUI) reminderEdit() {
 		return
 	}
 
-	id = rval.(int64)
+	id = int64(rval.(int))
 
-	if gval, err = model.GetValue(iter, 1); err != nil {
-		msg = fmt.Sprintf("Error getting Column Title: %s",
-			err.Error())
+	if r, ok = g.reminders[id]; !ok {
+		msg = fmt.Sprintf("Reminder with ID %d was not found", id)
 		g.log.Printf("[ERROR] %s\n", msg)
 		g.displayMsg(msg)
 		return
-	} else if rval, err = gval.GoValue(); err != nil {
-		msg = fmt.Sprintf("Cannot convert glib.Value to Go value: %s",
-			err.Error())
-		g.log.Printf("[ERROR] %s\n", msg)
-		g.displayMsg(msg)
-		return
-	}
-
-	title = rval.(string)
-
-	if gval, err = model.GetValue(iter, 2); err != nil {
-		msg = fmt.Sprintf("Error getting Column Title: %s",
-			err.Error())
-		g.log.Printf("[ERROR] %s\n", msg)
-		g.displayMsg(msg)
-		return
-	} else if rval, err = gval.GoValue(); err != nil {
-		msg = fmt.Sprintf("Cannot convert glib.Value to Go value: %s",
-			err.Error())
-		g.log.Printf("[ERROR] %s\n", msg)
-		g.displayMsg(msg)
-		return
-	}
-
-	tstr = rval.(string)
-
-	if timestamp, err = time.Parse(time.RFC3339, tstr); err != nil {
-		msg = fmt.Sprintf("Cannot parse time stamp %q: %s",
-			tstr,
-			err.Error())
-		g.log.Printf("[CANTHAPPEN] %s\n", msg)
-		g.displayMsg(msg)
-		return
-	}
-
-	if dlg, err = gtk.DialogNewWithButtons(
+	} else if dlg, err = gtk.DialogNewWithButtons(
 		"Choose Server",
 		g.win,
 		gtk.DIALOG_MODAL,
@@ -883,13 +849,14 @@ func (g *GUI) reminderEdit() {
 	dlg.ShowAll()
 
 BEGIN:
-	cal.SelectMonth(uint(timestamp.Month())-1, uint(timestamp.Year()))
-	cal.SelectDay(uint(timestamp.Day()))
+	cal.SelectMonth(uint(r.Timestamp.Month())-1, uint(r.Timestamp.Year()))
+	cal.SelectDay(uint(r.Timestamp.Day()))
 
-	hourInput.SetValue(float64(timestamp.Hour()))
-	minuteInput.SetValue(float64(timestamp.Minute()) + 10)
+	hourInput.SetValue(float64(r.Timestamp.Hour()))
+	minuteInput.SetValue(float64(r.Timestamp.Minute()) + 10)
 
-	titleEntry.SetText(title)
+	titleEntry.SetText(r.Title)
+	bodyEntry.SetText(r.Description)
 
 	var res = dlg.Run()
 
@@ -915,7 +882,6 @@ BEGIN:
 	var (
 		year, month, day uint
 		hour, min        int
-		r                objects.Reminder
 	)
 
 	year, month, day = cal.GetDate()
@@ -962,7 +928,7 @@ BEGIN:
 
 	payload["title"] = []string{r.Title}
 	payload["body"] = []string{r.Description}
-	payload["time"] = []string{r.Timestamp.Format(time.RFC3339)}
+	payload["timestamp"] = []string{r.Timestamp.Format(time.RFC3339)}
 
 	if reply, err = g.web.PostForm(addr, payload); err != nil {
 		g.log.Printf("[ERROR] Failed to submit new Reminder to Backend: %s\n",
@@ -991,8 +957,10 @@ BEGIN:
 	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
 		response)
 
+	// Errrr, I cannot append another entry, I need to update the one
+	// we edited in the first place.
 	if response.Status {
-		var iter = g.store.Append()
+		// var iter = g.store.Append()
 
 		g.store.Set( // nolint: errcheck
 			iter,

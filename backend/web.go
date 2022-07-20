@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-19 00:10:11 krylon>
+// Time-stamp: <2022-07-20 19:19:31 krylon>
 
 package backend
 
@@ -15,6 +15,7 @@ import (
 	"github.com/blicero/theseus/common"
 	"github.com/blicero/theseus/database"
 	"github.com/blicero/theseus/objects"
+	"github.com/gorilla/mux"
 	"github.com/pquerna/ffjson/ffjson"
 )
 
@@ -318,6 +319,8 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		txStatus                            bool
 	)
 
+	vars := mux.Vars(r)
+
 	if err = r.ParseForm(); err != nil {
 		msg = fmt.Sprintf("Cannot parse form data: %s", err.Error())
 		d.log.Printf("[ERROR] %s\n", msg)
@@ -325,10 +328,13 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		goto SEND_RESPONSE
 	}
 
-	idstr = r.FormValue("id")
+	idstr = vars["id"]
 	tstr = r.FormValue("timestamp")
 	titleStr = r.FormValue("title")
 	bodyStr = r.FormValue("body")
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
 
 	if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
 		msg = fmt.Sprintf("Cannot parse ID %q: %s",
@@ -345,9 +351,6 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		res.Message = msg
 		goto SEND_RESPONSE
 	}
-
-	db = d.pool.Get()
-	defer d.pool.Put(db)
 
 	if rem, err = db.ReminderGetByID(id); err != nil {
 		msg = fmt.Sprintf("Failed to look up Reminder #%d: %s",
@@ -370,10 +373,59 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if durAbs(rem.Timestamp.Sub(t)) > time.Minute {
-
+		if err = db.ReminderSetTimestamp(rem, t); err != nil {
+			msg = fmt.Sprintf("Error updating timestamp on Reminder %d: %s",
+				rem.ID,
+				err.Error())
+			d.log.Printf("[ERROR] %s\n", msg)
+			res.Message = msg
+			goto SEND_RESPONSE
+		}
 	}
 
+	if rem.Title != titleStr {
+		if err = db.ReminderSetTitle(rem, titleStr); err != nil {
+			msg = fmt.Sprintf("Failed to update Title of Reminder %d from %q to %q: %s",
+				rem.ID,
+				rem.Title,
+				titleStr,
+				err.Error())
+			d.log.Printf("[ERROR] %s\n", msg)
+			res.Message = msg
+			goto SEND_RESPONSE
+		}
+	}
+
+	if rem.Description != bodyStr {
+		if err = db.ReminderSetDescription(rem, bodyStr); err != nil {
+			msg = fmt.Sprintf("Failed to update Description of Reminder %d: %s",
+				rem.ID,
+				err.Error())
+			d.log.Printf("[ERROR] %s\n", msg)
+			res.Message = msg
+			goto SEND_RESPONSE
+		}
+	}
+
+	txStatus = true
+
 SEND_RESPONSE:
+	if txStatus {
+		if err = db.Commit(); err != nil {
+			msg = fmt.Sprintf("Error committing transaction: %s",
+				err.Error())
+			d.log.Printf("[ERROR] %s\n", msg)
+			res.Message = msg
+			res.Status = false
+		}
+	} else {
+		if err = db.Rollback(); err != nil {
+			msg = fmt.Sprintf("Failed to rollback transaction: %s",
+				err.Error())
+			d.log.Printf("[ERROR] %s\n", msg)
+		}
+	}
+
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) hanbdleReminderUpdate(w http.ResponseWriter, r *http.Request)
 
