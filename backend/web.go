@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-20 19:19:31 krylon>
+// Time-stamp: <2022-07-20 21:28:44 krylon>
 
 package backend
 
@@ -407,6 +407,8 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	res.Status = true
+	res.Message = "OK"
 	txStatus = true
 
 SEND_RESPONSE:
