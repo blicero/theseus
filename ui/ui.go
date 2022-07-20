@@ -65,13 +65,15 @@ var cols = []column{
 		display: true,
 		edit:    true,
 	},
+	column{
+		colType: glib.TYPE_STRING,
+		title:   "UUID",
+		display: false,
+		edit:    false,
+	},
 }
 
 func createCol(title string, id int) (*gtk.TreeViewColumn, *gtk.CellRendererText, error) {
-	krylib.Trace()
-	defer fmt.Printf("[TRACE] EXIT %s\n",
-		krylib.TraceInfo())
-
 	renderer, err := gtk.CellRendererTextNew()
 	if err != nil {
 		return nil, nil, err
@@ -170,6 +172,10 @@ func Create(srv string) (*GUI, error) {
 			col      *gtk.TreeViewColumn
 			renderer *gtk.CellRendererText
 		)
+
+		if !c.display {
+			continue
+		}
 
 		if col, renderer, err = createCol(c.title, i); err != nil {
 			win.log.Printf("[ERROR] Cannot create TreeViewColumn %q: %s\n",
