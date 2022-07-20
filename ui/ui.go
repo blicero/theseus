@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-20 19:17:39 krylon>
+// Time-stamp: <2022-07-20 22:00:46 krylon>
 
 package ui
 
@@ -316,9 +316,9 @@ func (g *GUI) initTree() error {
 
 func (g *GUI) fetchReminders() bool {
 	var (
-		err    error
-		rawURL string
-		res    *http.Response
+		err         error
+		rawURL, msg string
+		res         *http.Response
 	)
 
 	krylib.Trace()
@@ -328,14 +328,17 @@ func (g *GUI) fetchReminders() bool {
 		uriGetAll)
 
 	if _, err = url.Parse(rawURL); err != nil {
-		g.log.Printf("[ERROR] Invalid URL %q: %s\n",
+		msg = fmt.Sprintf("Invalid URL %q: %s",
 			rawURL,
 			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
 		return true
 	} else if res, err = g.web.Get(rawURL); err != nil {
 		g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
 			rawURL,
 			err.Error())
+
 		return true
 	} else if res.StatusCode != 200 {
 		err = fmt.Errorf("Unexpected HTTP status from backend: %s",
@@ -378,18 +381,59 @@ func (g *GUI) fetchReminders() bool {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
-	g.store.Clear()
+	var idList = make(map[int64]bool, len(list))
 
 	for _, r := range list {
-		g.reminders[r.ID] = r
-
-		var iter = g.store.Append()
-
-		g.store.Set( // nolint: errcheck
-			iter,
-			[]int{0, 1, 2, 3},
-			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished},
+		var (
+			ok   bool
+			iter *gtk.TreeIter
+			tstr = r.Timestamp.Format(common.TimestampFormat)
 		)
+
+		idList[r.ID] = true
+
+		if _, ok = g.reminders[r.ID]; !ok {
+			g.reminders[r.ID] = r
+			iter = g.store.Append()
+
+			g.store.Set( // nolint: errcheck
+				iter,
+				[]int{0, 1, 2, 3, 4},
+				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID},
+			)
+		} else if iter, err = g.getIter(r.ID); err != nil || iter == nil {
+			g.log.Printf("{ERROR] Could not get TreeIter for Reminder #%d\n",
+				r.ID)
+			continue
+		} else {
+			g.store.Set( // nolint: errcheck
+				iter,
+				[]int{0, 1, 2, 3, 4},
+				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID},
+			)
+		}
+	}
+
+	for iter, _ := g.store.GetIterFirst(); g.store.IterNext(iter); {
+		var (
+			val  *glib.Value
+			gval any
+			id   int
+			ok   bool
+		)
+
+		if val, err = g.store.GetValue(iter, 0); err != nil {
+			g.log.Printf("[ERROR] Cannot get value from TreeModel: %s\n",
+				err.Error())
+			continue
+		}
+		gval, _ = val.GoValue()
+
+		if id, ok = gval.(int); ok {
+			if !idList[int64(id)] {
+				g.store.Remove(iter)
+			}
+		}
 	}
 
 	return true
@@ -922,6 +966,11 @@ BEGIN:
 		goto BEGIN
 	}
 
+	// FIXME Wouldn't it be easier to just serialize the entire
+	//       Reminder to JSON and transmit that? I've already been
+	//       bitten twice by first forgetting a field, and then
+	//       using different names for a field on both ends.
+
 	var (
 		reply    *http.Response
 		response objects.Response
@@ -967,6 +1016,8 @@ BEGIN:
 	// we edited in the first place.
 	if response.Status {
 		// var iter = g.store.Append()
+
+		g.reminders[r.ID] = r
 
 		g.store.Set( // nolint: errcheck
 			iter,
@@ -1025,4 +1076,42 @@ func (g *GUI) displayMsg(msg string) {
 	box.PackStart(lbl, true, true, 0)
 	dlg.ShowAll()
 	dlg.Run()
-} // func (w *RWin) displayMsg(msg string)
+} // func (g *GUI) displayMsg(msg string)
+
+// getIter attempts to look up the TreeIter corresponding to the Reminder
+// item with the given id.
+func (g *GUI) getIter(id int64) (*gtk.TreeIter, error) {
+	var (
+		iter *gtk.TreeIter
+	)
+
+	iter, _ = g.store.GetIterFirst()
+
+	for {
+		var (
+			err  error
+			val  *glib.Value
+			gval any
+			rid  int64
+		)
+
+		if val, err = g.store.GetValue(iter, 0); err != nil {
+			g.log.Printf("[ERROR] Cannot get value from TreeModel: %s\n",
+				err.Error())
+			return nil, err
+		} else if gval, err = val.GoValue(); err != nil {
+			g.log.Printf("[ERROR] Error converting glib.Value to GoValue: %s\n",
+				err.Error())
+			return nil, err
+		}
+
+		rid = int64(gval.(int))
+		if rid == id {
+			return iter, nil
+		} else if !g.store.IterNext(iter) {
+			return nil, nil
+		}
+	}
+
+	// return nil, errors.New("CANTHAPPEN - Unreachable code!")
+} // func (g *GUI) getIter(id int64) *gtk.TreeIter
