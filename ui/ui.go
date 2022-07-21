@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-20 22:00:46 krylon>
+// Time-stamp: <2022-07-21 19:13:07 krylon>
 
 package ui
 
@@ -27,11 +27,12 @@ import (
 )
 
 const (
-	defaultBufSize  = 65536               // 64 KiB
-	uriGetPending   = "/reminder/pending" // nolint: deadcode,unused,varcheck
-	uriGetAll       = "/reminder/all"
-	uriReminderAdd  = "/reminder/add"
-	uriReminderEdit = "/reminder/%d/update"
+	defaultBufSize        = 65536               // 64 KiB
+	uriGetPending         = "/reminder/pending" // nolint: deadcode,unused,varcheck
+	uriGetAll             = "/reminder/all"
+	uriReminderAdd        = "/reminder/add"
+	uriReminderEdit       = "/reminder/%d/update"
+	uriReminderReactivate = "/reminder/%d/reactivate"
 )
 
 type column struct {
@@ -221,17 +222,17 @@ func Create(srv string) (*GUI, error) {
 
 // Run executes gtk's main event loop.
 func (g *GUI) Run() {
-	go func() {
-		var cnt = 0
-		for {
-			time.Sleep(time.Second)
-			cnt++
-			var msg = fmt.Sprintf("%s: Tick #%d",
-				time.Now().Format(common.TimestampFormat),
-				cnt)
-			g.statusbar.Push(666, msg)
-		}
-	}()
+	// go func() {
+	// 	var cnt = 0
+	// 	for {
+	// 		time.Sleep(time.Second)
+	// 		cnt++
+	// 		var msg = fmt.Sprintf("%s: Tick #%d",
+	// 			time.Now().Format(common.TimestampFormat),
+	// 			cnt)
+	// 		g.statusbar.Push(666, msg)
+	// 	}
+	// }()
 
 	gtk.Main()
 } // func (w *RWin) Run()
@@ -241,7 +242,7 @@ func (g *GUI) initMenu() error {
 		err                                  error
 		fMenu, rMenu                         *gtk.Menu
 		srvItem, quitItem, addItem, editItem *gtk.MenuItem
-		fItem, rItem                         *gtk.MenuItem
+		fItem, rItem, rrItem                 *gtk.MenuItem
 	)
 
 	if fMenu, err = gtk.MenuNew(); err != nil {
@@ -268,6 +269,10 @@ func (g *GUI) initMenu() error {
 		g.log.Printf("[ERROR] Cannot create menu item EDIT: %s\n",
 			err.Error())
 		return err
+	} else if rrItem, err = gtk.MenuItemNewWithMnemonic("_Reactivate Reminder"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item REACTIVATE: %s\n",
+			err.Error())
+		return err
 	} else if fItem, err = gtk.MenuItemNewWithMnemonic("_File"); err != nil {
 		g.log.Printf("[ERROR] Cannot create menu item FILE: %s\n",
 			err.Error())
@@ -282,11 +287,13 @@ func (g *GUI) initMenu() error {
 	srvItem.Connect("activate", g.setServer)
 	addItem.Connect("activate", g.reminderAdd)
 	editItem.Connect("activate", g.reminderEdit)
+	rrItem.Connect("activate", g.reminderReactivate)
 
 	fMenu.Append(srvItem)
 	fMenu.Append(quitItem)
 	rMenu.Append(addItem)
 	rMenu.Append(editItem)
+	rMenu.Append(rrItem)
 
 	g.menuBar.Append(fItem)
 	g.menuBar.Append(rItem)
@@ -1026,6 +1033,94 @@ BEGIN:
 		)
 	}
 } // func (g *GUI) reminderEdit()
+
+func (g *GUI) reminderReactivate() {
+	var (
+		err  error
+		msg  string
+		ok   bool
+		sel  *gtk.TreeSelection
+		iter *gtk.TreeIter
+		id   int64
+		gval *glib.Value
+		rval any
+	)
+
+	if sel, err = g.view.GetSelection(); err != nil {
+		msg = fmt.Sprintf("Failed to get Selection from TreeView: %s",
+			err.Error())
+		g.displayMsg(msg)
+		g.log.Printf("[ERROR] %s\n", msg)
+		return
+	} else if _, iter, ok = sel.GetSelected(); !ok || iter == nil {
+		g.log.Println("[ERROR] Could not get TreeIter from TreeSelection")
+		return
+	} else if gval, err = g.store.GetValue(iter, 0); err != nil {
+		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+		return
+	} else if rval, err = gval.GoValue(); err != nil {
+		msg = fmt.Sprintf("Cannot get Go value from glib.Value: %s", err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+		return
+	}
+
+	id = int64(rval.(int))
+
+	var (
+		reply    *http.Response
+		response objects.Response
+		buf      bytes.Buffer
+		addr     = fmt.Sprintf("http://%s%s",
+			g.srv,
+			fmt.Sprintf(uriReminderReactivate, id))
+	)
+
+	if reply, err = g.web.Get(addr); err != nil {
+		msg = fmt.Sprintf("Failed to GET %s: %s",
+			addr,
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+	} else if reply.StatusCode != 200 {
+		msg = fmt.Sprintf("Unexpected HTTP status from server: %s",
+			reply.Status)
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+	} else if reply.Close {
+		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
+			reply.Request.URL)
+		defer reply.Body.Close() // nolint: errcheck
+	}
+
+	if _, err = io.Copy(&buf, reply.Body); err != nil {
+		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
+			err.Error())
+		return
+	} else if err = ffjson.Unmarshal(buf.Bytes(), &response); err != nil {
+		g.log.Printf("[ERROR] Cannot de-serialize Response from JSON: %s\n",
+			err.Error())
+		return
+	}
+
+	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
+		response)
+
+	if response.Status {
+		g.store.Set( // nolint: errcheck
+			iter,
+			[]int{3},
+			[]any{true},
+		)
+
+		var r = g.reminders[id]
+		r.Finished = false
+		g.reminders[id] = r
+	}
+} // func (g *GUI) reminderReactivate()
 
 ////////////////////////////////////////////////////////////////////////////////
 ///// General Utilities ////////////////////////////////////////////////////////
