@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 22. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 18:28:58 krylon>
+// Time-stamp: <2022-07-22 21:28:09 krylon>
 
 package ui
 
@@ -131,6 +131,10 @@ func (g *GUI) yesOrNo(title, question string) (bool, error) {
 
 	return answer, nil
 } // func (g *GUI) yesOrNo(question string) (bool, error)
+
+func (g *GUI) pushMsg(msg string) {
+	g.statusbar.Push(msgID, msg)
+} // func (g *GUI) pushMsg(msg string)
 
 // getIter attempts to look up the TreeIter corresponding to the Reminder
 // item with the given id.

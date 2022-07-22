@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 21:13:28 krylon>
+// Time-stamp: <2022-07-22 21:29:32 krylon>
 
 package ui
 
@@ -339,7 +339,7 @@ func (g *GUI) fetchReminders() bool {
 			rawURL,
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 		return true
 	} else if res, err = g.web.Get(rawURL); err != nil {
 		g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
@@ -1059,12 +1059,12 @@ func (g *GUI) reminderReactivate() {
 		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 		return
 	} else if rval, err = gval.GoValue(); err != nil {
 		msg = fmt.Sprintf("Cannot get Go value from glib.Value: %s", err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 		return
 	}
 
@@ -1084,12 +1084,12 @@ func (g *GUI) reminderReactivate() {
 			addr,
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 	} else if reply.StatusCode != 200 {
 		msg = fmt.Sprintf("Unexpected HTTP status from server: %s",
 			reply.Status)
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 	} else if reply.Close {
 		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
 			reply.Request.URL)
@@ -1147,12 +1147,12 @@ func (g *GUI) reminderDelete() {
 		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 		return
 	} else if rval, err = gval.GoValue(); err != nil {
 		msg = fmt.Sprintf("Cannot get Go value from glib.Value: %s", err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 		return
 	}
 
@@ -1172,7 +1172,7 @@ func (g *GUI) reminderDelete() {
 		msg = fmt.Sprintf("Failed to ask user for confirmation: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 		return
 	} else if !ok {
 		g.log.Printf("[INFO] User did not agree to delete Reminder %d (%q)\n",
@@ -1184,12 +1184,12 @@ func (g *GUI) reminderDelete() {
 			addr,
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 	} else if reply.StatusCode != 200 {
 		msg = fmt.Sprintf("Unexpected HTTP status from server: %s",
 			reply.Status)
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(msgID, msg)
+		g.pushMsg(msg)
 	} else if reply.Close {
 		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
 			reply.Request.URL)
