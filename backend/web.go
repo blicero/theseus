@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-21 19:00:01 krylon>
+// Time-stamp: <2022-07-22 18:40:49 krylon>
 
 package backend
 
@@ -27,6 +27,7 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/edit/timestamp", d.handleReminderSetTimestamp)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/update", d.handleReminderUpdate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/reactivate", d.handleReminderReactivate)
+	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/delete", d.handleReminderDelete)
 
 	return nil
 } // func (d *Daemon) initWebHandlers() error
@@ -463,7 +464,13 @@ func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.Request
 	db = d.pool.Get()
 	defer d.pool.Put(db)
 
-	if rem, err = db.ReminderGetByID(id); err != nil {
+	if err = db.Begin(); err != nil {
+		msg = fmt.Sprintf("Error starting transaction: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if rem, err = db.ReminderGetByID(id); err != nil {
 		msg = fmt.Sprintf("Cannot lookup Reminder by ID %d: %s",
 			id,
 			err.Error())
@@ -483,13 +490,89 @@ func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.Request
 		d.log.Printf("[ERROR] %s\n", msg)
 		res.Message = msg
 		goto SEND_RESPONSE
+	} else if err = db.ReminderSetTimestamp(rem, time.Now().Add(time.Second*300)); err != nil {
+		msg = fmt.Sprintf("Cannot set Timestamp on Remonder %d (%q): %s",
+			id,
+			rem.Title,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
 	}
 
 	res.Status = true
 
 SEND_RESPONSE:
+	if res.Status {
+		db.Commit() // nolint: errcheck
+	} else {
+		db.Rollback() // nolint: errcheck
+	}
+
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.request)
+
+func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err        error
+		vars       map[string]string
+		idstr, msg string
+		id         int64
+		db         *database.Database
+		rem        *objects.Reminder
+		res        = objects.Response{ID: d.getID()}
+	)
+
+	vars = mux.Vars(r)
+
+	idstr = vars["id"]
+
+	if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
+		msg = fmt.Sprintf("Cannot parse ID %q: %s",
+			idstr,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	}
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if rem, err = db.ReminderGetByID(id); err != nil {
+		msg = fmt.Sprintf("Cannot lookup Reminder by ID %d: %s",
+			id,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if rem == nil {
+		msg = fmt.Sprintf("Did not find Reminder %d in database", id)
+		d.log.Printf("[INFO] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if err = db.ReminderDelete(rem); err != nil {
+		msg = fmt.Sprintf("Failed to delete Reminder %d (%q): %s",
+			id,
+			rem.Title,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	}
+
+	res.Message = fmt.Sprintf("Reminder %d (%q) was deleted",
+		id,
+		rem.Title)
+	res.Status = true
+
+SEND_RESPONSE:
+	d.sendResponseJSON(w, &res)
+} // func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// Helpers //////////////////////////////////////////////////////////////////////////////////////

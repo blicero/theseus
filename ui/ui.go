@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-21 19:13:07 krylon>
+// Time-stamp: <2022-07-22 18:44:05 krylon>
 
 package ui
 
@@ -31,6 +31,7 @@ const (
 	uriGetPending         = "/reminder/pending" // nolint: deadcode,unused,varcheck
 	uriGetAll             = "/reminder/all"
 	uriReminderAdd        = "/reminder/add"
+	uriReminderDelete     = "/reminder/%d/delete"
 	uriReminderEdit       = "/reminder/%d/update"
 	uriReminderReactivate = "/reminder/%d/reactivate"
 )
@@ -234,7 +235,7 @@ func (g *GUI) initMenu() error {
 		err                                  error
 		fMenu, rMenu                         *gtk.Menu
 		srvItem, quitItem, addItem, editItem *gtk.MenuItem
-		fItem, rItem, rrItem                 *gtk.MenuItem
+		fItem, rItem, rrItem, delItem        *gtk.MenuItem
 	)
 
 	if fMenu, err = gtk.MenuNew(); err != nil {
@@ -273,6 +274,10 @@ func (g *GUI) initMenu() error {
 		g.log.Printf("[ERROR] Cannot create menu item REMINDER: %s\n",
 			err.Error())
 		return err
+	} else if delItem, err = gtk.MenuItemNewWithMnemonic("_Delete Reminder"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu Item DELETE: %s\n",
+			err.Error())
+		return err
 	}
 
 	quitItem.Connect("activate", gtk.MainQuit)
@@ -280,12 +285,14 @@ func (g *GUI) initMenu() error {
 	addItem.Connect("activate", g.reminderAdd)
 	editItem.Connect("activate", g.reminderEdit)
 	rrItem.Connect("activate", g.reminderReactivate)
+	delItem.Connect("activate", g.reminderDelete)
 
 	fMenu.Append(srvItem)
 	fMenu.Append(quitItem)
 	rMenu.Append(addItem)
 	rMenu.Append(editItem)
 	rMenu.Append(rrItem)
+	rMenu.Append(delItem)
 
 	g.menuBar.Append(fItem)
 	g.menuBar.Append(rItem)
@@ -1114,91 +1121,104 @@ func (g *GUI) reminderReactivate() {
 	}
 } // func (g *GUI) reminderReactivate()
 
-////////////////////////////////////////////////////////////////////////////////
-///// General Utilities ////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-// nolint: unused
-func (g *GUI) displayMsg(msg string) {
-	krylib.Trace()
-	defer g.log.Printf("[TRACE] EXIT %s\n",
-		krylib.TraceInfo())
-
+func (g *GUI) reminderDelete() {
 	var (
-		err error
-		dlg *gtk.Dialog
-		lbl *gtk.Label
-		box *gtk.Box
-	)
-
-	if dlg, err = gtk.DialogNewWithButtons(
-		"Message",
-		g.win,
-		gtk.DIALOG_MODAL,
-		[]interface{}{
-			"Okay",
-			gtk.RESPONSE_OK,
-		},
-	); err != nil {
-		g.log.Printf("[ERROR] Cannot create dialog to display message: %s\nMesage would've been %q\n",
-			err.Error(),
-			msg)
-		return
-	}
-
-	defer dlg.Close()
-
-	if lbl, err = gtk.LabelNew(msg); err != nil {
-		g.log.Printf("[ERROR] Cannot create label to display message: %s\nMessage would've been: %q\n",
-			err.Error(),
-			msg)
-		return
-	} else if box, err = dlg.GetContentArea(); err != nil {
-		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog to display message: %s\nMessage would've been %q\n",
-			err.Error(),
-			msg)
-		return
-	}
-
-	box.PackStart(lbl, true, true, 0)
-	dlg.ShowAll()
-	dlg.Run()
-} // func (g *GUI) displayMsg(msg string)
-
-// getIter attempts to look up the TreeIter corresponding to the Reminder
-// item with the given id.
-func (g *GUI) getIter(id int64) (*gtk.TreeIter, error) {
-	var (
+		err  error
+		msg  string
+		ok   bool
+		sel  *gtk.TreeSelection
 		iter *gtk.TreeIter
+		id   int64
+		gval *glib.Value
+		rval any
 	)
 
-	iter, _ = g.store.GetIterFirst()
-
-	for {
-		var (
-			err  error
-			val  *glib.Value
-			gval any
-			rid  int64
-		)
-
-		if val, err = g.store.GetValue(iter, 0); err != nil {
-			g.log.Printf("[ERROR] Cannot get value from TreeModel: %s\n",
-				err.Error())
-			return nil, err
-		} else if gval, err = val.GoValue(); err != nil {
-			g.log.Printf("[ERROR] Error converting glib.Value to GoValue: %s\n",
-				err.Error())
-			return nil, err
-		}
-
-		rid = int64(gval.(int))
-		if rid == id {
-			return iter, nil
-		} else if !g.store.IterNext(iter) {
-			return nil, nil
-		}
+	if sel, err = g.view.GetSelection(); err != nil {
+		msg = fmt.Sprintf("Failed to get Selection from TreeView: %s",
+			err.Error())
+		g.displayMsg(msg)
+		g.log.Printf("[ERROR] %s\n", msg)
+		return
+	} else if _, iter, ok = sel.GetSelected(); !ok || iter == nil {
+		g.log.Println("[ERROR] Could not get TreeIter from TreeSelection")
+		return
+	} else if gval, err = g.store.GetValue(iter, 0); err != nil {
+		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+		return
+	} else if rval, err = gval.GoValue(); err != nil {
+		msg = fmt.Sprintf("Cannot get Go value from glib.Value: %s", err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+		return
 	}
 
-	// return nil, errors.New("CANTHAPPEN - Unreachable code!")
-} // func (g *GUI) getIter(id int64) *gtk.TreeIter
+	id = int64(rval.(int))
+
+	var (
+		reply    *http.Response
+		response objects.Response
+		buf      bytes.Buffer
+		addr     = fmt.Sprintf("http://%s%s",
+			g.srv,
+			fmt.Sprintf(uriReminderDelete, id))
+		rem = g.reminders[id]
+	)
+
+	if ok, err = g.yesOrNo("Are you sure?", fmt.Sprintf("Do you want to delete Reminder #%d (%q)?", rem.ID, rem.Title)); err != nil {
+		msg = fmt.Sprintf("Failed to ask user for confirmation: %s",
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+		return
+	} else if !ok {
+		g.log.Printf("[INFO] User did not agree to delete Reminder %d (%q)\n",
+			rem.ID,
+			rem.Title)
+		return
+	} else if reply, err = g.web.Get(addr); err != nil {
+		msg = fmt.Sprintf("Failed to GET %s: %s",
+			addr,
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+	} else if reply.StatusCode != 200 {
+		msg = fmt.Sprintf("Unexpected HTTP status from server: %s",
+			reply.Status)
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.statusbar.Push(666, msg)
+	} else if reply.Close {
+		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
+			reply.Request.URL)
+		defer reply.Body.Close() // nolint: errcheck
+	}
+
+	if _, err = io.Copy(&buf, reply.Body); err != nil {
+		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
+			err.Error())
+		return
+	} else if err = ffjson.Unmarshal(buf.Bytes(), &response); err != nil {
+		g.log.Printf("[ERROR] Cannot de-serialize Response from JSON: %s\n",
+			err.Error())
+		return
+	}
+
+	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
+		response)
+
+	if response.Status {
+		// g.store.Set( // nolint: errcheck
+		// 	iter,
+		// 	[]int{3},
+		// 	[]any{true},
+		// )
+
+		// var r = g.reminders[id]
+		// r.Finished = false
+		// g.reminders[id] = r
+		delete(g.reminders, id)
+		g.store.Remove(iter)
+	}
+} // func (g *GUI) reminderDelete()
