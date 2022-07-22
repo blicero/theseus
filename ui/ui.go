@@ -216,24 +216,16 @@ func Create(srv string) (*GUI, error) {
 		common.Version))
 
 	glib.TimeoutAdd(uint(10000), win.fetchReminders)
+	glib.IdleAdd(func() bool {
+		win.fetchReminders()
+		return false
+	})
 
 	return win, nil
 } // func Create(srv string) (*GUI, error)
 
 // Run executes gtk's main event loop.
 func (g *GUI) Run() {
-	// go func() {
-	// 	var cnt = 0
-	// 	for {
-	// 		time.Sleep(time.Second)
-	// 		cnt++
-	// 		var msg = fmt.Sprintf("%s: Tick #%d",
-	// 			time.Now().Format(common.TimestampFormat),
-	// 			cnt)
-	// 		g.statusbar.Push(666, msg)
-	// 	}
-	// }()
-
 	gtk.Main()
 } // func (w *RWin) Run()
 
