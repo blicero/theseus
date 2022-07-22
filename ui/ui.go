@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 18:44:05 krylon>
+// Time-stamp: <2022-07-22 21:13:28 krylon>
 
 package ui
 
@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	defaultBufSize        = 65536               // 64 KiB
-	uriGetPending         = "/reminder/pending" // nolint: deadcode,unused,varcheck
+	defaultBufSize        = 65536 // 64 KiB
+	msgID                 = 666
+	uriGetPending         = "/reminder/pending"
 	uriGetAll             = "/reminder/all"
 	uriReminderAdd        = "/reminder/add"
 	uriReminderDelete     = "/reminder/%d/delete"
@@ -338,7 +339,7 @@ func (g *GUI) fetchReminders() bool {
 			rawURL,
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 		return true
 	} else if res, err = g.web.Get(rawURL); err != nil {
 		g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
@@ -1058,12 +1059,12 @@ func (g *GUI) reminderReactivate() {
 		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 		return
 	} else if rval, err = gval.GoValue(); err != nil {
 		msg = fmt.Sprintf("Cannot get Go value from glib.Value: %s", err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 		return
 	}
 
@@ -1083,12 +1084,12 @@ func (g *GUI) reminderReactivate() {
 			addr,
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 	} else if reply.StatusCode != 200 {
 		msg = fmt.Sprintf("Unexpected HTTP status from server: %s",
 			reply.Status)
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 	} else if reply.Close {
 		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
 			reply.Request.URL)
@@ -1146,12 +1147,12 @@ func (g *GUI) reminderDelete() {
 		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 		return
 	} else if rval, err = gval.GoValue(); err != nil {
 		msg = fmt.Sprintf("Cannot get Go value from glib.Value: %s", err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 		return
 	}
 
@@ -1171,7 +1172,7 @@ func (g *GUI) reminderDelete() {
 		msg = fmt.Sprintf("Failed to ask user for confirmation: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 		return
 	} else if !ok {
 		g.log.Printf("[INFO] User did not agree to delete Reminder %d (%q)\n",
@@ -1183,12 +1184,12 @@ func (g *GUI) reminderDelete() {
 			addr,
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 	} else if reply.StatusCode != 200 {
 		msg = fmt.Sprintf("Unexpected HTTP status from server: %s",
 			reply.Status)
 		g.log.Printf("[ERROR] %s\n", msg)
-		g.statusbar.Push(666, msg)
+		g.statusbar.Push(msgID, msg)
 	} else if reply.Close {
 		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
 			reply.Request.URL)
