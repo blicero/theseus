@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-22 20:05:53 krylon>
+# Time-stamp: <2022-07-22 21:20:12 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,21 +9,21 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-22 Fr 20:05]
-  | Headline                  | Time      |           |         |       |
-  |---------------------------+-----------+-----------+---------+-------|
-  | *Total time*              | *3d 3:11* |           |         |       |
-  |---------------------------+-----------+-----------+---------+-------|
-  | *Theseus*                 | *3d 3:11* |           |         |       |
-  | \_  /Components/          |           | /3d 3:11/ |         |       |
-  | \_    Data types          |           |           |    1:04 |       |
-  | \_    Database            |           |           |    2:38 |       |
-  | \_    Backend             |           |           |   23:19 |       |
-  | \_      Notifications     |           |           |         | 12:12 |
-  | \_      HTTP API          |           |           |         |  5:30 |
-  | \_    Frontend            |           |           | 2d 0:10 |       |
-  | \_      Cleanup           |           |           |         |  1:02 |
-  | \_      Re-Arm a Reminder |           |           |         |  3:59 |
+  #+CAPTION: Clock summary at [2022-07-22 Fr 21:20]
+  | Headline                  | Time      |           |          |       |
+  |---------------------------+-----------+-----------+----------+-------|
+  | *Total time*              | *3d 3:20* |           |          |       |
+  |---------------------------+-----------+-----------+----------+-------|
+  | *Theseus*                 | *3d 3:20* |           |          |       |
+  | \_  /Components/          |           | /3d 2:09/ |          |       |
+  | \_    Data types          |           |           |     1:04 |       |
+  | \_    Database            |           |           |     2:38 |       |
+  | \_    Backend             |           |           |    23:19 |       |
+  | \_      Notifications     |           |           |          | 12:12 |
+  | \_      HTTP API          |           |           |          |  5:30 |
+  | \_    Frontend            |           |           | 1d 23:08 |       |
+  | \_      Re-Arm a Reminder |           |           |          |  3:59 |
+  | \_  /Cleanup/             |           | /1:11/    |          |       |
   #+END:
 * Theseus
 ** Components
@@ -95,11 +95,6 @@
     CLOCK: [2022-07-07 Do 22:38]--[2022-07-07 Do 22:50] =>  0:12
     CLOCK: [2022-07-07 Do 18:25]--[2022-07-07 Do 21:15] =>  2:50
     :END:
-**** TODO Cleanup                                        :internals:refactor:
-     :LOGBOOK:
-     CLOCK: [2022-07-22 Fr 18:35]--[2022-07-22 Fr 19:23] =>  0:48
-     CLOCK: [2022-07-22 Fr 18:21]--[2022-07-22 Fr 18:35] =>  0:14
-     :END:
 **** TODO Keyboard shortcuts
      I want to do more stuff with the keyboard.
      I am a very keyboard-centric person, so no surprise there, I guess.
@@ -115,5 +110,11 @@
      CLOCK: [2022-07-20 Mi 23:12]--[2022-07-21 Do 00:05] =>  0:53
      :END:
      I want a way to conveniently re-arm a reminder
+** TODO Cleanup                                          :internals:refactor:
+   :LOGBOOK:
+   CLOCK: [2022-07-22 Fr 21:11]--[2022-07-22 Fr 21:20] =>  0:09
+   CLOCK: [2022-07-22 Fr 18:35]--[2022-07-22 Fr 19:23] =>  0:48
+   CLOCK: [2022-07-22 Fr 18:21]--[2022-07-22 Fr 18:35] =>  0:14
+   :END:
 ** Bugs
 ** Questions
