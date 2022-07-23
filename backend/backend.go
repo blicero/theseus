@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-12 23:05:58 krylon>
+// Time-stamp: <2022-07-23 19:28:31 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -244,7 +244,7 @@ func (d *Daemon) notifyLoop() {
 				title,
 				body)
 
-			if err = d.notify(m); err != nil {
+			if err = d.notify(m, 0); err != nil {
 				d.log.Printf("[ERROR] Failed to post Notification %q: %s\n",
 					title,
 					err.Error())
@@ -253,7 +253,7 @@ func (d *Daemon) notifyLoop() {
 	}
 } // func (d *Daemon) notifyLoop()
 
-func (d *Daemon) notify(n objects.Notification) error {
+func (d *Daemon) notify(n objects.Notification, timeout int32) error {
 	var (
 		err        error
 		obj        = d.bus.Object(notifyObj, notifyPath)
@@ -285,7 +285,7 @@ func (d *Daemon) notify(n objects.Notification) error {
 			"Delay",
 		},
 		map[string]*dbus.Variant{},
-		0,
+		timeout,
 	)
 
 	if res.Err != nil {
