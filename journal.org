@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-23 19:21:37 krylon>
+# Time-stamp: <2022-07-23 19:33:55 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,16 +9,17 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-22 Fr 21:30]
+  #+CAPTION: Clock summary at [2022-07-23 Sa 19:31]
   | Headline                  | Time      |           |          |       |
   |---------------------------+-----------+-----------+----------+-------|
-  | *Total time*              | *3d 3:23* |           |          |       |
+  | *Total time*              | *3d 3:58* |           |          |       |
   |---------------------------+-----------+-----------+----------+-------|
-  | *Theseus*                 | *3d 3:23* |           |          |       |
-  | \_  /Components/          |           | /3d 2:09/ |          |       |
+  | *Theseus*                 | *3d 3:58* |           |          |       |
+  | \_  /Components/          |           | /3d 2:44/ |          |       |
   | \_    Data types          |           |           |     1:04 |       |
   | \_    Database            |           |           |     2:38 |       |
-  | \_    Backend             |           |           |    23:19 |       |
+  | \_    Backend             |           |           |    23:54 |       |
+  | \_      Testing           |           |           |          |  0:35 |
   | \_      Notifications     |           |           |          | 12:12 |
   | \_      HTTP API          |           |           |          |  5:30 |
   | \_    Frontend            |           |           | 1d 23:08 |       |
@@ -54,13 +55,22 @@
     CLOCK: [2022-07-02 Sa 17:04]--[2022-07-02 Sa 19:06] =>  2:02
     CLOCK: [2022-07-01 Fr 20:56]--[2022-07-01 Fr 22:05] =>  1:09
     :END:
-**** TODO Testing
+**** DONE Testing
+     CLOSED: [2022-07-23 Sa 19:31]
      :LOGBOOK:
+     CLOCK: [2022-07-23 Sa 19:22]--[2022-07-23 Sa 19:31] =>  0:09
      CLOCK: [2022-07-23 Sa 18:55]--[2022-07-23 Sa 19:21] =>  0:26
      :END:
      The notification displayed by the test "suite" does not expire.
      That was useful initially, but it got annoying surprisingly fast.
-**** TODO Notifications                                             :feature:
+     ...
+     Looking at the code, I have two options:
+     - I can add a timeout parameter to the backend.notify method. It's called
+       in only one place from the regular code, so I can add a parameter there.
+     - I can add a timeout value to the Reminder struct *and* to the database.
+     Sounds like an easy choice. Or is it?
+**** DONE Notifications                                             :feature:
+     CLOSED: [2022-07-23 Sa 19:33]
      :LOGBOOK:
      CLOCK: [2022-07-12 Di 20:42]--[2022-07-12 Di 23:22] =>  2:40
      CLOCK: [2022-07-11 Mo 20:46]--[2022-07-12 Di 01:03] =>  4:17
