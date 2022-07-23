@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 21:37:37 krylon>
+// Time-stamp: <2022-07-23 22:01:52 krylon>
 
 package ui
 
@@ -535,6 +535,7 @@ func (g *GUI) setServer() {
 func (g *GUI) reminderAdd() {
 	var (
 		err                                error
+		msg                                string
 		dlg                                *gtk.Dialog
 		dbox                               *gtk.Box
 		grid                               *gtk.Grid
@@ -690,13 +691,13 @@ BEGIN:
 		&r)
 
 	if r.Timestamp.Before(time.Now()) {
-		var msg = fmt.Sprintf("The time you selected is in the past: %s",
+		msg = fmt.Sprintf("The time you selected is in the past: %s",
 			r.Timestamp.Format(common.TimestampFormat))
 		g.displayMsg(msg)
 		g.log.Printf("[ERROR] %s\n", msg)
 		goto BEGIN
 	} else if r.Title == "" {
-		var msg = "You did not enter a title"
+		msg = "You did not enter a title"
 		g.displayMsg(msg)
 		g.log.Printf("[ERROR] %s\n", msg)
 		goto BEGIN
@@ -706,15 +707,25 @@ BEGIN:
 		reply    *http.Response
 		response objects.Response
 		buf      bytes.Buffer
+		j        []byte
 		addr     = fmt.Sprintf("http://%s%s",
 			g.srv,
 			uriReminderAdd)
 		payload = make(url.Values)
 	)
 
-	payload["title"] = []string{r.Title}
-	payload["body"] = []string{r.Description}
-	payload["time"] = []string{r.Timestamp.Format(time.RFC3339)}
+	if j, err = ffjson.Marshal(r); err != nil {
+		msg = fmt.Sprintf("Failed to convert Reminder to JSON: %s",
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.displayMsg(msg)
+		return
+	}
+
+	payload["reminder"] = []string{string(j)}
+	// payload["title"] = []string{r.Title}
+	// payload["body"] = []string{r.Description}
+	// payload["time"] = []string{r.Timestamp.Format(time.RFC3339)}
 
 	if reply, err = g.web.PostForm(addr, payload); err != nil {
 		g.log.Printf("[ERROR] Failed to submit new Reminder to Backend: %s\n",

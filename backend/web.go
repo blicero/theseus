@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 18:40:49 krylon>
+// Time-stamp: <2022-07-23 22:11:11 krylon>
 
 package backend
 
@@ -56,11 +56,11 @@ func (d *Daemon) handleReminderAdd(w http.ResponseWriter, r *http.Request) {
 		r.RemoteAddr)
 
 	var (
-		err       error
-		rem       objects.Reminder
-		db        *database.Database
-		tstr, msg string
-		response  = objects.Response{ID: d.getID()}
+		err      error
+		rem      objects.Reminder
+		db       *database.Database
+		msg      string
+		response = objects.Response{ID: d.getID()}
 	)
 
 	if err = r.ParseForm(); err != nil {
@@ -68,18 +68,10 @@ func (d *Daemon) handleReminderAdd(w http.ResponseWriter, r *http.Request) {
 			err.Error())
 		response.Message = err.Error()
 		goto SEND_RESPONSE
-	}
-
-	rem.Title = r.PostFormValue("title")
-	rem.Description = r.PostFormValue("body")
-	tstr = r.PostFormValue("time")
-
-	if rem.Timestamp, err = time.Parse(time.RFC3339, tstr); err != nil {
-		msg = fmt.Sprintf("Cannot parse time stamp %q: %s",
-			tstr,
+	} else if err = ffjson.Unmarshal([]byte(r.PostFormValue("reminder")), &rem); err != nil {
+		d.log.Printf("[ERROR] Cannot parse Reminder: %s\n",
 			err.Error())
-		d.log.Printf("[ERROR] %s\n", msg)
-		response.Message = msg
+		response.Message = err.Error()
 		goto SEND_RESPONSE
 	}
 
