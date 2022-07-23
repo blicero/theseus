@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 21:29:32 krylon>
+// Time-stamp: <2022-07-22 21:37:37 krylon>
 
 package ui
 
@@ -29,7 +29,6 @@ import (
 const (
 	defaultBufSize        = 65536 // 64 KiB
 	msgID                 = 666
-	uriGetPending         = "/reminder/pending"
 	uriGetAll             = "/reminder/all"
 	uriReminderAdd        = "/reminder/add"
 	uriReminderDelete     = "/reminder/%d/delete"
