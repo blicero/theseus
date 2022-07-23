@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-23 19:33:55 krylon>
+# Time-stamp: <2022-07-24 11:39:25 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,12 +9,12 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-23 Sa 19:31]
+  #+CAPTION: Clock summary at [2022-07-23 Sa 22:12]
   | Headline                  | Time      |           |          |       |
   |---------------------------+-----------+-----------+----------+-------|
-  | *Total time*              | *3d 3:58* |           |          |       |
+  | *Total time*              | *3d 4:12* |           |          |       |
   |---------------------------+-----------+-----------+----------+-------|
-  | *Theseus*                 | *3d 3:58* |           |          |       |
+  | *Theseus*                 | *3d 4:12* |           |          |       |
   | \_  /Components/          |           | /3d 2:44/ |          |       |
   | \_    Data types          |           |           |     1:04 |       |
   | \_    Database            |           |           |     2:38 |       |
@@ -24,10 +24,10 @@
   | \_      HTTP API          |           |           |          |  5:30 |
   | \_    Frontend            |           |           | 1d 23:08 |       |
   | \_      Re-Arm a Reminder |           |           |          |  3:59 |
-  | \_  /Cleanup/             |           | /1:14/    |          |       |
+  | \_  /Cleanup/             |           | /1:28/    |          |       |
   #+END:
-* Theseus
-** Components
+* Theseus [1/1]
+** Components [0/0]
 *** Data types                                                    :internals:
     :LOGBOOK:
     CLOCK: [2022-07-01 Fr 17:48]--[2022-07-01 Fr 17:51] =>  0:03
@@ -48,7 +48,7 @@
 *** Networking?                                          :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
-*** Backend
+*** Backend [2/3]
     :LOGBOOK:
     CLOCK: [2022-07-09 Sa 17:39]--[2022-07-09 Sa 17:40] =>  0:01
     CLOCK: [2022-07-04 Mo 17:12]--[2022-07-04 Mo 19:37] =>  2:25
@@ -126,8 +126,10 @@
      CLOCK: [2022-07-20 Mi 23:12]--[2022-07-21 Do 00:05] =>  0:53
      :END:
      I want a way to conveniently re-arm a reminder
-** TODO Cleanup                                          :internals:refactor:
+** DONE Cleanup                                          :internals:refactor:
+   CLOSED: [2022-07-24 So 11:39]
    :LOGBOOK:
+   CLOCK: [2022-07-23 Sa 21:57]--[2022-07-23 Sa 22:11] =>  0:14
    CLOCK: [2022-07-22 Fr 21:27]--[2022-07-22 Fr 21:30] =>  0:03
    CLOCK: [2022-07-22 Fr 21:11]--[2022-07-22 Fr 21:20] =>  0:09
    CLOCK: [2022-07-22 Fr 18:35]--[2022-07-22 Fr 19:23] =>  0:48
