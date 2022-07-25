@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-24 11:39:25 krylon>
+# Time-stamp: <2022-07-25 18:29:40 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -26,8 +26,16 @@
   | \_      Re-Arm a Reminder |           |           |          |  3:59 |
   | \_  /Cleanup/             |           | /1:28/    |          |       |
   #+END:
-* Theseus [1/1]
-** Components [0/0]
+* Theseus [4/6]
+  :PROPERTIES:
+  :COOKIE_DATA: todo recursive
+  :VISIBILITY: children
+  :END:
+** Components [3/5]
+   :PROPERTIES:
+   :COOKIE_DATA: todo recursive
+   :VISIBILITY: children
+   :END:
 *** Data types                                                    :internals:
     :LOGBOOK:
     CLOCK: [2022-07-01 Fr 17:48]--[2022-07-01 Fr 17:51] =>  0:03
@@ -49,6 +57,10 @@
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
 *** Backend [2/3]
+    :PROPERTIES:
+    :COOKIE_DATA: todo recursive
+    :VISIBILITY: children
+    :END:
     :LOGBOOK:
     CLOCK: [2022-07-09 Sa 17:39]--[2022-07-09 Sa 17:40] =>  0:01
     CLOCK: [2022-07-04 Mo 17:12]--[2022-07-04 Mo 19:37] =>  2:25
@@ -126,6 +138,17 @@
      CLOCK: [2022-07-20 Mi 23:12]--[2022-07-21 Do 00:05] =>  0:53
      :END:
      I want a way to conveniently re-arm a reminder
+*** Other sources                                                   :feature:
+    The whole point of using a client-server approach was to allow external
+    programs to supply Reminders, the way I used to do with my old -
+    *ancient* - Perl POE Reminder application.
+    Currently ([2022-07-25 Mo]), I am without usable Internet access, so I'll
+    have to be a little creative to come up with ideas.
+    I used to have one backend to watch directories for changes, mainly to be
+    notified of finished Downloads. Without Internet access, that doesn't make
+    a lot of sense.
+    I've always wanted to monitor system logs for important messages. Now,
+    *that* would be useful, wouldn't it?
 ** DONE Cleanup                                          :internals:refactor:
    CLOSED: [2022-07-24 So 11:39]
    :LOGBOOK:
