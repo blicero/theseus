@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-07-28 19:19:11 krylon>
+# Time-stamp: <2022-08-15 21:19:50 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,24 +9,25 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-07-25 Mo 23:10]
-  | Headline                  | Time      |           |          |       |
-  |---------------------------+-----------+-----------+----------+-------|
-  | *Total time*              | *3d 4:25* |           |          |       |
-  |---------------------------+-----------+-----------+----------+-------|
-  | *Theseus [4/6]*           | *3d 4:25* |           |          |       |
-  | \_  /Components [3/5]/    |           | /3d 2:57/ |          |       |
-  | \_    Data types          |           |           |     1:04 |       |
-  | \_    Database            |           |           |     2:38 |       |
-  | \_    Backend [2/3]       |           |           |    23:54 |       |
-  | \_      Testing           |           |           |          |  0:35 |
-  | \_      Notifications     |           |           |          | 12:12 |
-  | \_      HTTP API          |           |           |          |  5:30 |
-  | \_    Frontend            |           |           | 1d 23:08 |       |
-  | \_      Re-Arm a Reminder |           |           |          |  3:59 |
-  | \_    Other sources [0/0] |           |           |     0:13 |       |
-  | \_      logreader         |           |           |          |  0:13 |
-  | \_  /Cleanup/             |           | /1:28/    |          |       |
+  #+CAPTION: Clock summary at [2022-08-15 Mo 21:19]
+  | Headline                  | Time      |            |          |          |
+  |---------------------------+-----------+------------+----------+----------|
+  | *Total time*              | *5d 1:27* |            |          |          |
+  |---------------------------+-----------+------------+----------+----------|
+  | *Theseus [4/6]*           | *5d 1:27* |            |          |          |
+  | \_  /Components [3/5]/    |           | /4d 23:59/ |          |          |
+  | \_    Data types          |           |            |     1:04 |          |
+  | \_    Database            |           |            |     2:38 |          |
+  | \_    Backend [2/3]       |           |            |    23:54 |          |
+  | \_      Testing           |           |            |          |     0:35 |
+  | \_      Notifications     |           |            |          |    12:12 |
+  | \_      HTTP API          |           |            |          |     5:30 |
+  | \_    Frontend            |           |            | 1d 23:08 |          |
+  | \_      Re-Arm a Reminder |           |            |          |     3:59 |
+  | \_    Other sources [0/2] |           |            | 1d 21:15 |          |
+  | \_      Framework?        |           |            |          |     3:11 |
+  | \_      logreader         |           |            |          | 1d 18:04 |
+  | \_  /Cleanup/             |           | /1:28/     |          |          |
   #+END:
 * Theseus [4/6]
   :PROPERTIES:
@@ -140,7 +141,7 @@
      CLOCK: [2022-07-20 Mi 23:12]--[2022-07-21 Do 00:05] =>  0:53
      :END:
      I want a way to conveniently re-arm a reminder
-*** Other sources [0/0]                                             :feature:
+*** Other sources [0/2]                                             :feature:
     :PROPERTIES:
     :COOKIE_DATA: todo recursive
     :VISIBILITY: children
@@ -155,8 +156,19 @@
     a lot of sense.
     I've always wanted to monitor system logs for important messages. Now,
     *that* would be useful, wouldn't it?
-**** logreader
+**** TODO Framework?                                   :internals:meditation:
      :LOGBOOK:
+     CLOCK: [2022-08-15 Mo 19:18]--[2022-08-15 Mo 21:19] =>  2:01
+     CLOCK: [2022-08-15 Mo 13:27]--[2022-08-15 Mo 14:18] =>  0:51
+     CLOCK: [2022-08-14 So 14:26]--[2022-08-14 So 14:45] =>  0:19
+     :END:
+     As I am staring in horror at an empty source file, I wonder if I should
+     start by building a kind of framework for clients/sources. If I come up
+     with several ideas for message sources, it would make sense to factor out
+     as much of that as possible.
+**** TODO logreader
+     :LOGBOOK:
+     CLOCK: [2022-08-13 Sa 18:41]--[2022-08-13 Sa 20:44] =>  2:03
      CLOCK: [2022-07-27 Mi 03:31]--[2022-07-28 Do 19:19] => 39:48
      CLOCK: [2022-07-25 Mo 20:22]--[2022-07-25 Mo 20:35] =>  0:13
      :END:
