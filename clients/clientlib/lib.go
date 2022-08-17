@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 14. 08. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-15 20:26:40 krylon>
+// Time-stamp: <2022-08-16 19:19:08 krylon>
 
 // Package clientlib provides the basic framework for
 // building clients that create new Notifications.
@@ -66,6 +66,10 @@ func NewClient(srv string) (*Client, error) {
 
 	return c, nil
 } // func NewClient(srv string) (*Client, error)
+
+func (c *Client) GetLogger() *log.Logger {
+	return c.log
+} // func (c *Client) GetLogger() *log.Logger
 
 func (c *Client) SubmitReminder(r *objects.Reminder) error {
 	var (
