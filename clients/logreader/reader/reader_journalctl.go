@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 16. 08. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-17 19:32:17 krylon>
+// Time-stamp: <2022-08-18 19:48:44 krylon>
 
 // +build linux
 
@@ -10,14 +10,15 @@ package reader
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/blicero/theseus/clients/clientlib"
-	"github.com/pquerna/ffjson/ffjson"
 )
 
 const (
@@ -36,7 +37,7 @@ type Record struct {
 	Cursor             string `json:"__CURSOR"`
 	CGroup             string `json:"_SYSTEMD_CGROUP"`
 	SeLinuxContext     string `json:"_SELINUX_CONTEXT"`
-	Message            string `json:"MESSAGE"`
+	Message            any    `json:"MESSAGE"`
 	Transport          string `json:"_TRANSPORT"`
 	Hostname           string `json:"_HOSTNAME"`
 	AuditLoginUid      int    `json:"_AUDIT_LOGINUID,string"`
@@ -98,11 +99,7 @@ func (r *ReaderLinux) ReadLog(maxAge time.Duration) ([]LogRecord, error) {
 		r.GetLogger().Printf("[ERROR] Failed to run journalctl(1): %s\n",
 			err.Error())
 		return nil, err
-	} // else if err = ffjson.Unmarshal(output, records); err != nil {
-	// 	r.GetLogger().Printf("[ERROR] Cannot parse JSON output from journalctl(1): %s\n",
-	// 		err.Error())
-	// 	return nil, err
-	// }
+	}
 
 	lines = bytes.Split(output, []byte{'\n'})
 
@@ -114,18 +111,27 @@ func (r *ReaderLinux) ReadLog(maxAge time.Duration) ([]LogRecord, error) {
 		}
 
 		var rec Record
-		if err = ffjson.Unmarshal(line, &rec); err != nil {
+		if err = json.Unmarshal(line, &rec); err != nil {
 			r.GetLogger().Printf("[ERROR] Cannot parse JSON output from journalctl(1): %s\n%s\n\n",
 				err.Error(),
 				line)
-			return nil, err
+			continue
 		}
 
 		var l = LogRecord{
-			Timestamp: time.Unix(rec.MonotonicTimestamp, 0),
+			Timestamp: time.Unix(rec.RealtimeStamp/1000000, 0),
 			Source:    rec.Executable,
-			Message:   rec.Message, // strings.Join(rec.Message, " "),
-			Hash:      "#Hashtag",  // We'll cover this one later.
+			Hash:      "#Hashtag", // We'll cover this one later.
+		}
+
+		switch m := rec.Message.(type) {
+		case string:
+			l.Message = m
+		case []string:
+			l.Message = strings.Join(m, " / ")
+		default:
+			r.GetLogger().Printf("[ERROR] Unexpected type for field MESSAGE: %T\n", rec.Message)
+			continue
 		}
 
 		result = append(result, l)
