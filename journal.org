@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-17 19:35:09 krylon>
+# Time-stamp: <2022-08-19 18:48:49 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,13 +9,13 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-17 Mi 19:35]
+  #+CAPTION: Clock summary at [2022-08-19 Fr 18:48]
   | Headline                  | Time      |           |          |          |
   |---------------------------+-----------+-----------+----------+----------|
-  | *Total time*              | *5d 4:34* |           |          |          |
+  | *Total time*              | *5d 6:41* |           |          |          |
   |---------------------------+-----------+-----------+----------+----------|
-  | *Theseus [4/6]*           | *5d 4:34* |           |          |          |
-  | \_  /Components [3/5]/    |           | /5d 3:06/ |          |          |
+  | *Theseus [4/6]*           | *5d 6:41* |           |          |          |
+  | \_  /Components [3/5]/    |           | /5d 5:13/ |          |          |
   | \_    Data types          |           |           |     1:04 |          |
   | \_    Database            |           |           |     2:38 |          |
   | \_    Backend [2/3]       |           |           |    23:54 |          |
@@ -24,9 +24,9 @@
   | \_      HTTP API          |           |           |          |     5:30 |
   | \_    Frontend            |           |           | 1d 23:08 |          |
   | \_      Re-Arm a Reminder |           |           |          |     3:59 |
-  | \_    Other sources [0/2] |           |           |  2d 0:22 |          |
+  | \_    Other sources [0/2] |           |           |  2d 2:29 |          |
   | \_      Framework?        |           |           |          |     3:11 |
-  | \_      logreader         |           |           |          | 1d 21:11 |
+  | \_      logreader         |           |           |          | 1d 23:18 |
   | \_  /Cleanup/             |           | /1:28/    |          |          |
   #+END:
 * Theseus [4/6]
@@ -168,6 +168,7 @@
      as much of that as possible.
 **** TODO logreader
      :LOGBOOK:
+     CLOCK: [2022-08-18 Do 19:41]--[2022-08-18 Do 21:48] =>  2:07
      CLOCK: [2022-08-17 Mi 18:16]--[2022-08-17 Mi 19:35] =>  1:19
      CLOCK: [2022-08-16 Di 19:14]--[2022-08-16 Di 21:02] =>  1:48
      CLOCK: [2022-08-13 Sa 18:41]--[2022-08-13 Sa 20:44] =>  2:03
