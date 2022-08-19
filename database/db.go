@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-19 21:53:20 krylon>
+// Time-stamp: <2022-08-19 19:02:47 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -758,6 +758,7 @@ EXEC_QUERY:
 	return items, nil
 } // func (db *Database) ReminderGetPending() ([]objects.Reminder, error)
 
+// ReminderGetAll retrieves all Reminders from the database.
 func (db *Database) ReminderGetAll() ([]objects.Reminder, error) {
 	const qid query.ID = query.ReminderGetAll
 	var (
@@ -1054,6 +1055,7 @@ EXEC_QUERY:
 	return nil
 } // func (db *Database) ReminderSetTitle(r *objects.Reminder, title string) error
 
+// ReminderSetTimestamp updates a Reminder's timestamp to the given value.
 func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error {
 	const qid query.ID = query.ReminderSetTimestamp
 	var (
@@ -1121,6 +1123,7 @@ EXEC_QUERY:
 	return nil
 } // func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error
 
+// ReminderSetDescription updates a Reminder's Description.
 func (db *Database) ReminderSetDescription(r *objects.Reminder, desc string) error {
 	const qid query.ID = query.ReminderSetDescription
 	var (
