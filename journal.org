@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-19 18:48:49 krylon>
+# Time-stamp: <2022-08-19 19:45:33 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,12 +9,12 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-19 Fr 18:48]
+  #+CAPTION: Clock summary at [2022-08-19 Fr 19:45]
   | Headline                  | Time      |           |          |          |
   |---------------------------+-----------+-----------+----------+----------|
-  | *Total time*              | *5d 6:41* |           |          |          |
+  | *Total time*              | *5d 8:11* |           |          |          |
   |---------------------------+-----------+-----------+----------+----------|
-  | *Theseus [4/6]*           | *5d 6:41* |           |          |          |
+  | *Theseus [4/6]*           | *5d 8:11* |           |          |          |
   | \_  /Components [3/5]/    |           | /5d 5:13/ |          |          |
   | \_    Data types          |           |           |     1:04 |          |
   | \_    Database            |           |           |     2:38 |          |
@@ -28,6 +28,8 @@
   | \_      Framework?        |           |           |          |     3:11 |
   | \_      logreader         |           |           |          | 1d 23:18 |
   | \_  /Cleanup/             |           | /1:28/    |          |          |
+  | \_  /Testing [0/0]/       |           | /1:30/    |          |          |
+  | \_    Database            |           |           |     1:30 |          |
   #+END:
 * Theseus [4/6]
   :PROPERTIES:
@@ -186,5 +188,16 @@
    CLOCK: [2022-07-22 Fr 18:35]--[2022-07-22 Fr 19:23] =>  0:48
    CLOCK: [2022-07-22 Fr 18:21]--[2022-07-22 Fr 18:35] =>  0:14
    :END:
+** Testing [0/0]
+   :PROPERTIES:
+   :COOKIE_DATA: todo recursive
+   :VISIBILITY: children
+   :END:
+   Automated testing is good. So I would like to add more tests, and maybe,
+   just /maybe/ play around with Go's builtin fuzzing.
+*** Database
+    :LOGBOOK:
+    CLOCK: [2022-08-19 Fr 18:15]--[2022-08-19 Fr 19:45] =>  1:30
+    :END:
 ** Bugs
 ** Questions
