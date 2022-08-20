@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-23 22:01:52 krylon>
+// Time-stamp: <2022-08-20 18:42:56 krylon>
 
 package ui
 
@@ -96,19 +96,21 @@ var gtkInit sync.Once
 // GUI wraps the components of the graphical user interface (hence the name),
 // along with the bits and pieces needed to talk to the backend.
 type GUI struct {
-	srv       string
-	log       *log.Logger
-	lock      sync.RWMutex // nolint: unused,structcheck
-	win       *gtk.Window
-	mainBox   *gtk.Box
-	store     *gtk.ListStore
-	view      *gtk.TreeView
-	scr       *gtk.ScrolledWindow
-	menuBar   *gtk.MenuBar
-	statusbar *gtk.Statusbar
-	fMenu     *gtk.Menu // nolint: unused,structcheck
-	web       http.Client
-	reminders map[int64]objects.Reminder
+	srv          string
+	log          *log.Logger
+	lock         sync.RWMutex // nolint: unused,structcheck
+	win          *gtk.Window
+	mainBox      *gtk.Box
+	store        *gtk.ListStore
+	filter       *gtk.TreeModelFilter
+	view         *gtk.TreeView
+	scr          *gtk.ScrolledWindow
+	menuBar      *gtk.MenuBar
+	statusbar    *gtk.Statusbar
+	fMenu        *gtk.Menu // nolint: unused,structcheck
+	web          http.Client
+	reminders    map[int64]objects.Reminder
+	hideFinished bool
 }
 
 // Create creates a new GUI instance ready to be used. Call the Run() method
@@ -163,6 +165,7 @@ func Create(srv string) (*GUI, error) {
 		win.log.Printf("[ERROR] Cannot create TreeStore: %s\n",
 			err.Error())
 		return nil, err
+		//} else if win.filter, err = win.store.FilterNew(
 	} else if win.view, err = gtk.TreeViewNewWithModel(win.store); err != nil {
 		win.log.Printf("[ERROR] Cannot create TreeView: %s\n",
 			err.Error())
@@ -236,6 +239,7 @@ func (g *GUI) initMenu() error {
 		fMenu, rMenu                         *gtk.Menu
 		srvItem, quitItem, addItem, editItem *gtk.MenuItem
 		fItem, rItem, rrItem, delItem        *gtk.MenuItem
+		hideFinItem                          *gtk.CheckMenuItem
 	)
 
 	if fMenu, err = gtk.MenuNew(); err != nil {
@@ -278,6 +282,10 @@ func (g *GUI) initMenu() error {
 		g.log.Printf("[ERROR] Cannot create menu Item DELETE: %s\n",
 			err.Error())
 		return err
+	} else if hideFinItem, err = gtk.CheckMenuItemNewWithMnemonic("_Hide Finished"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item HIDE_FINISHED: %s\n",
+			err.Error())
+		return err
 	}
 
 	quitItem.Connect("activate", gtk.MainQuit)
@@ -286,6 +294,7 @@ func (g *GUI) initMenu() error {
 	editItem.Connect("activate", g.reminderEdit)
 	rrItem.Connect("activate", g.reminderReactivate)
 	delItem.Connect("activate", g.reminderDelete)
+	hideFinItem.Connect("activate", g.reminderHideFinished)
 
 	fMenu.Append(srvItem)
 	fMenu.Append(quitItem)
@@ -293,6 +302,7 @@ func (g *GUI) initMenu() error {
 	rMenu.Append(editItem)
 	rMenu.Append(rrItem)
 	rMenu.Append(delItem)
+	rMenu.Append(hideFinItem)
 
 	g.menuBar.Append(fItem)
 	g.menuBar.Append(rItem)
@@ -308,6 +318,15 @@ func (g *GUI) initTree() error {
 		err error
 		sel *gtk.TreeSelection
 	)
+
+	if g.filter, err = g.store.FilterNew(nil); err != nil {
+		g.log.Printf("[ERROR] Cannot create TreeModelFilter: %s\n",
+			err.Error())
+		return err
+	}
+
+	g.filter.SetVisibleFunc(g.reminderFilterFn)
+	g.view.SetModel(g.filter)
 
 	if sel, err = g.view.GetSelection(); err != nil {
 		g.log.Printf("[ERROR] Cannot get TreeSelection: %s\n",
@@ -723,9 +742,6 @@ BEGIN:
 	}
 
 	payload["reminder"] = []string{string(j)}
-	// payload["title"] = []string{r.Title}
-	// payload["body"] = []string{r.Description}
-	// payload["time"] = []string{r.Timestamp.Format(time.RFC3339)}
 
 	if reply, err = g.web.PostForm(addr, payload); err != nil {
 		g.log.Printf("[ERROR] Failed to submit new Reminder to Backend: %s\n",
@@ -804,6 +820,7 @@ func (g *GUI) reminderEdit() {
 	}
 
 	model = imodel.ToTreeModel()
+	iter = g.filter.ConvertIterToChildIter(iter)
 
 	if gval, err = model.GetValue(iter, 0); err != nil {
 		msg = fmt.Sprintf("Error getting Column ID: %s",
@@ -1032,8 +1049,6 @@ BEGIN:
 	// Errrr, I cannot append another entry, I need to update the one
 	// we edited in the first place.
 	if response.Status {
-		// var iter = g.store.Append()
-
 		g.reminders[r.ID] = r
 
 		g.store.Set( // nolint: errcheck
@@ -1065,7 +1080,11 @@ func (g *GUI) reminderReactivate() {
 	} else if _, iter, ok = sel.GetSelected(); !ok || iter == nil {
 		g.log.Println("[ERROR] Could not get TreeIter from TreeSelection")
 		return
-	} else if gval, err = g.store.GetValue(iter, 0); err != nil {
+	}
+
+	iter = g.filter.ConvertIterToChildIter(iter)
+
+	if gval, err = g.store.GetValue(iter, 0); err != nil {
 		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
@@ -1153,7 +1172,11 @@ func (g *GUI) reminderDelete() {
 	} else if _, iter, ok = sel.GetSelected(); !ok || iter == nil {
 		g.log.Println("[ERROR] Could not get TreeIter from TreeSelection")
 		return
-	} else if gval, err = g.store.GetValue(iter, 0); err != nil {
+	}
+
+	iter = g.filter.ConvertIterToChildIter(iter)
+
+	if gval, err = g.store.GetValue(iter, 0); err != nil {
 		msg = fmt.Sprintf("Could not get glib.Value from TreeIter: %s",
 			err.Error())
 		g.log.Printf("[ERROR] %s\n", msg)
@@ -1220,16 +1243,41 @@ func (g *GUI) reminderDelete() {
 		response)
 
 	if response.Status {
-		// g.store.Set( // nolint: errcheck
-		// 	iter,
-		// 	[]int{3},
-		// 	[]any{true},
-		// )
-
-		// var r = g.reminders[id]
-		// r.Finished = false
-		// g.reminders[id] = r
 		delete(g.reminders, id)
 		g.store.Remove(iter)
 	}
 } // func (g *GUI) reminderDelete()
+
+func (g *GUI) reminderHideFinished() {
+	g.hideFinished = !g.hideFinished
+	g.filter.Refilter()
+} // func (g *GUI) reminderHideFinished()
+
+func (g *GUI) reminderFilterFn(model *gtk.TreeModel, iter *gtk.TreeIter) bool {
+	if !g.hideFinished {
+		return true
+	}
+
+	var (
+		err          error
+		val          *glib.Value
+		gval         any
+		finished, ok bool
+	)
+
+	if val, err = model.GetValue(iter, 3); err != nil {
+		g.log.Printf("[ERROR] Cannot get Value from Model: %s\n",
+			err.Error())
+		return true
+	} else if gval, err = val.GoValue(); err != nil {
+		g.log.Printf("[ERROR] Cannot get GoValue from glib.Value: %s\n",
+			err.Error())
+		return true
+	} else if finished, ok = gval.(bool); !ok {
+		g.log.Printf("[ERROR] Cannot get bool from GoValue %T\n",
+			gval)
+		return true
+	}
+
+	return !finished
+} // func (g *GUI) reminderFilterFn(model *gtk.TreeModel, iter *gtk.TreeIter) bool
