@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 22. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-22 21:28:09 krylon>
+// Time-stamp: <2022-08-19 21:11:29 krylon>
 
 package ui
 
@@ -19,7 +19,6 @@ import (
 ///// General Utilities ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// nolint: unused
 func (g *GUI) displayMsg(msg string) {
 	krylib.Trace()
 	defer g.log.Printf("[TRACE] EXIT %s\n",
