@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-20 18:42:56 krylon>
+// Time-stamp: <2022-08-20 20:27:37 krylon>
 
 package ui
 
@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -171,6 +172,10 @@ func Create(srv string) (*GUI, error) {
 			err.Error())
 		return nil, err
 	}
+
+	// win.store.SetDefaultSortFunc(win.reminderCmpFunc)
+	// win.store.SetSortColumnId(2, gtk.SORT_ASCENDING)
+	// win.view.SetReorderable(true)
 
 	for i, c := range cols {
 		var (
@@ -820,7 +825,7 @@ func (g *GUI) reminderEdit() {
 	}
 
 	model = imodel.ToTreeModel()
-	iter = g.filter.ConvertIterToChildIter(iter)
+	// iter = g.filter.ConvertIterToChildIter(iter)
 
 	if gval, err = model.GetValue(iter, 0); err != nil {
 		msg = fmt.Sprintf("Error getting Column ID: %s",
@@ -1281,3 +1286,55 @@ func (g *GUI) reminderFilterFn(model *gtk.TreeModel, iter *gtk.TreeIter) bool {
 
 	return !finished
 } // func (g *GUI) reminderFilterFn(model *gtk.TreeModel, iter *gtk.TreeIter) bool
+
+// nolint: unused
+func (g *GUI) reminderCmpFunc(model *gtk.TreeModel, a, b *gtk.TreeIter) int {
+	var (
+		err      error
+		id1, id2 int
+		val      *glib.Value
+		gval     any
+		ok       bool
+	)
+
+	if val, err = model.GetValue(a, 0); err != nil {
+		g.log.Printf("[ERROR] Cannot get glib.Value from TreeIter a: %s\n",
+			err.Error())
+		return 0
+	} else if gval, err = val.GoValue(); err != nil {
+		g.log.Printf("[ERROR] Cannot get GoValue from glib.Value a: %s\n",
+			err.Error())
+		return 0
+	} else if id1, ok = gval.(int); !ok {
+		g.log.Printf("[ERROR] Invalid type for Reminder ID: %T\n",
+			gval)
+		return 0
+	}
+
+	if val, err = model.GetValue(b, 0); err != nil {
+		g.log.Printf("[ERROR] Cannot get glib.Value from TreeIter b: %s\n",
+			err.Error())
+		return 0
+	} else if gval, err = val.GoValue(); err != nil {
+		g.log.Printf("[ERROR] Cannot get GoValue from glib.Value b: %s\n",
+			err.Error())
+		return 0
+	} else if id2, ok = gval.(int); !ok {
+		g.log.Printf("[ERROR] Invalid type for Reminder ID: %T\n",
+			gval)
+		return 0
+	}
+
+	var r1, r2 objects.Reminder
+
+	r1 = g.reminders[int64(id1)]
+	r2 = g.reminders[int64(id2)]
+
+	if r1.Timestamp.Before(r2.Timestamp) {
+		return -1
+	} else if r1.Timestamp.After(r2.Timestamp) {
+		return 1
+	} else {
+		return strings.Compare(r1.Title, r2.Title)
+	}
+} // func (g *GUI) reminderCmpFunc(a, b *gtk.TreeIter) int
