@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 22. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-19 21:11:29 krylon>
+// Time-stamp: <2022-08-22 20:17:50 krylon>
 
 package ui
 
@@ -79,9 +79,9 @@ func (g *GUI) yesOrNo(title, question string) (bool, error) {
 		g.win,
 		gtk.DIALOG_MODAL,
 		[]any{
-			"Yes",
+			"_Yes",
 			gtk.RESPONSE_YES,
-			"No",
+			"_No",
 			gtk.RESPONSE_NO,
 		},
 	); err != nil {
