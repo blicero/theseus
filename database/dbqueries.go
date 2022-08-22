@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-12 23:02:58 krylon>
+// Time-stamp: <2022-08-22 19:11:07 krylon>
 
 package database
 
@@ -59,4 +59,5 @@ WHERE id = ?
 	query.ReminderSetDescription: "UPDATE reminder SET description = ? WHERE id = ?",
 	query.ReminderSetTimestamp:   "UPDATE reminder SET due = ? WHERE id = ?",
 	query.ReminderSetFinished:    "UPDATE reminder SET finished = ? WHERE id = ?",
+	query.ReminderReactivate:     "UPDATE reminder SET finished = 0, due = ? WHERE id = ?",
 }

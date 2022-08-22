@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-23 22:11:11 krylon>
+// Time-stamp: <2022-08-22 20:11:24 krylon>
 
 package backend
 
@@ -37,7 +37,7 @@ func (d *Daemon) serveHTTP() {
 
 	defer d.log.Println("[INFO] Web server is shutting down")
 
-	d.log.Printf("[INFO] Web frontend is going online at %s\n", d.web.Addr)
+	d.log.Printf("[INFO] Web interface is going online at %s\n", d.web.Addr)
 	http.Handle("/", d.router)
 
 	if err = d.web.ListenAndServe(); err != nil {
@@ -474,7 +474,8 @@ func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.Request
 		d.log.Printf("[INFO] %s\n", msg)
 		res.Message = msg
 		goto SEND_RESPONSE
-	} else if err = db.ReminderSetFinished(rem, false); err != nil {
+		// } else if err = db.ReminderSetFinished(rem, false); err != nil {
+	} else if err = db.ReminderReactivate(rem, time.Now().Add(time.Minute*60)); err != nil {
 		msg = fmt.Sprintf("Cannot clear Finished flag for Reminder %d (%q): %s",
 			id,
 			rem.Title,
@@ -482,7 +483,7 @@ func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.Request
 		d.log.Printf("[ERROR] %s\n", msg)
 		res.Message = msg
 		goto SEND_RESPONSE
-	} else if err = db.ReminderSetTimestamp(rem, time.Now().Add(time.Second*300)); err != nil {
+	} /* else if err = db.ReminderSetTimestamp(rem, time.Now().Add(time.Second*300)); err != nil {
 		msg = fmt.Sprintf("Cannot set Timestamp on Remonder %d (%q): %s",
 			id,
 			rem.Title,
@@ -490,7 +491,7 @@ func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.Request
 		d.log.Printf("[ERROR] %s\n", msg)
 		res.Message = msg
 		goto SEND_RESPONSE
-	}
+	} */
 
 	res.Status = true
 
