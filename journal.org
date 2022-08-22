@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-20 22:10:55 krylon>
+# Time-stamp: <2022-08-22 20:35:29 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,30 +9,33 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-20 Sa 22:10]
-  | Headline                      | Time       |            |         |          |
-  |-------------------------------+------------+------------+---------+----------|
-  | *Total time*                  | *5d 14:34* |            |         |          |
-  |-------------------------------+------------+------------+---------+----------|
-  | *Theseus [4/6]*               | *5d 14:34* |            |         |          |
-  | \_  /Components [3/8]/        |            | /5d 11:36/ |         |          |
-  | \_    Data types              |            |            |    1:04 |          |
-  | \_    Database                |            |            |    2:38 |          |
-  | \_    Backend [2/3]           |            |            |   23:54 |          |
-  | \_      Testing               |            |            |         |     0:35 |
-  | \_      Notifications         |            |            |         |    12:12 |
-  | \_      HTTP API              |            |            |         |     5:30 |
-  | \_    Frontend                |            |            | 2d 5:31 |          |
-  | \_      Filtering and Sorting |            |            |         |     6:23 |
-  | \_      Re-Arm a Reminder     |            |            |         |     3:59 |
-  | \_    Other sources [0/2]     |            |            | 2d 2:29 |          |
-  | \_      Framework?            |            |            |         |     3:11 |
-  | \_      logreader             |            |            |         | 1d 23:18 |
-  | \_  /Cleanup/                 |            | /1:28/     |         |          |
-  | \_  /Testing [0/0]/           |            | /1:30/     |         |          |
-  | \_    Database                |            |            |    1:30 |          |
+  #+CAPTION: Clock summary at [2022-08-22 Mo 20:35]
+  | Headline                                     | Time       |            |         |          |
+  |----------------------------------------------+------------+------------+---------+----------|
+  | *Total time*                                 | *5d 16:13* |            |         |          |
+  |----------------------------------------------+------------+------------+---------+----------|
+  | *Theseus [5/11]*                             | *5d 16:13* |            |         |          |
+  | \_  /Components [3/8]/                       |            | /5d 11:36/ |         |          |
+  | \_    Data types                             |            |            |    1:04 |          |
+  | \_    Database                               |            |            |    2:38 |          |
+  | \_    Backend [2/3]                          |            |            |   23:54 |          |
+  | \_      Testing                              |            |            |         |     0:35 |
+  | \_      Notifications                        |            |            |         |    12:12 |
+  | \_      HTTP API                             |            |            |         |     5:30 |
+  | \_    Frontend                               |            |            | 2d 5:31 |          |
+  | \_      Filtering and Sorting                |            |            |         |     6:23 |
+  | \_      Re-Arm a Reminder                    |            |            |         |     3:59 |
+  | \_    Other sources [0/2]                    |            |            | 2d 2:29 |          |
+  | \_      Framework?                           |            |            |         |     3:11 |
+  | \_      logreader                            |            |            |         | 1d 23:18 |
+  | \_  /Cleanup/                                |            | /1:28/     |         |          |
+  | \_  /Testing [0/0]/                          |            | /1:30/     |         |          |
+  | \_    Database                               |            |            |    1:30 |          |
+  | \_  /Bugs/                                   |            | /1:39/     |         |          |
+  | \_    Update timestamp when re-activating... |            |            |    1:16 |          |
+  | \_    Deleting Reminders                     |            |            |    0:23 |          |
   #+END:
-* Theseus [4/6]
+* Theseus [5/11]
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
@@ -209,5 +212,19 @@
     :LOGBOOK:
     CLOCK: [2022-08-19 Fr 18:15]--[2022-08-19 Fr 19:45] =>  1:30
     :END:
-** Bugs
+** Bugs                                                                 :bug:
+*** DONE Update timestamp when re-activating Reminders
+    CLOSED: [2022-08-22 Mo 20:11]
+    :LOGBOOK:
+    CLOCK: [2022-08-22 Mo 18:55]--[2022-08-22 Mo 20:11] =>  1:16
+    :END:
+    When I reactivate a Reminder, I want its timestamp to be set to some point
+    in the the not too distant future. Ideally, I could open a dialog to ask
+    for a time.
+*** TODO Deleting Reminders
+    :LOGBOOK:
+    CLOCK: [2022-08-22 Mo 20:12]--[2022-08-22 Mo 20:35] =>  0:23
+    :END:
+    When I try to delete a Reminder, a dialog appears and asks me if I am
+    sure, but it only has one button that says /Yes/. ???
 ** Questions
