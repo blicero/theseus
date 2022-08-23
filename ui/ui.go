@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-20 20:27:37 krylon>
+// Time-stamp: <2022-08-23 18:40:16 krylon>
 
 package ui
 
@@ -497,7 +497,11 @@ func (g *GUI) setServer() {
 
 	defer dlg.Close()
 
-	if grid, err = gtk.GridNew(); err != nil {
+	if _, err = dlg.AddButton("_OK", gtk.RESPONSE_OK); err != nil {
+		g.log.Printf("[ERROR] Cannot add button OK to dialog: %s\n",
+			err.Error())
+		return
+	} else if grid, err = gtk.GridNew(); err != nil {
 		g.log.Printf("[ERROR] Cannot create gtk.Grid: %s\n",
 			err.Error())
 		return

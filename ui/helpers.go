@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 22. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-22 20:17:50 krylon>
+// Time-stamp: <2022-08-23 18:37:31 krylon>
 
 package ui
 
@@ -92,7 +92,11 @@ func (g *GUI) yesOrNo(title, question string) (bool, error) {
 
 	defer dlg.Close()
 
-	if lbl, err = gtk.LabelNew(question); err != nil {
+	if _, err = dlg.AddButton("_No", gtk.RESPONSE_NO); err != nil {
+		g.log.Printf("[ERROR] Cannot add NO button to dialog: %s\n",
+			err.Error())
+		return false, err
+	} else if lbl, err = gtk.LabelNew(question); err != nil {
 		g.log.Printf("[ERROR] Cannot create Label for Dialog: %s\n",
 			err.Error())
 		return false, err
