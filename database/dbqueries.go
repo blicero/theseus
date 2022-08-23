@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-22 19:11:07 krylon>
+// Time-stamp: <2022-08-23 18:48:32 krylon>
 
 package database
 
@@ -24,6 +24,7 @@ SELECT
 FROM reminder
 WHERE finished = 0
   AND due < ?
+ORDER BY finished, due, title
 `,
 	query.ReminderGetFinished: `
 SELECT
@@ -34,6 +35,7 @@ SELECT
     uuid
 FROM reminder
 WHERE finished
+ORDER BY finished, due, title
 `,
 	query.ReminderGetAll: `
 SELECT
@@ -44,6 +46,7 @@ SELECT
     finished,
     uuid
 FROM reminder
+ORDER BY finished, due, title
 `,
 	query.ReminderGetByID: `
 SELECT
