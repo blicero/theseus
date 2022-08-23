@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-22 20:35:29 krylon>
+# Time-stamp: <2022-08-23 18:47:27 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,12 +9,12 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-22 Mo 20:35]
+  #+CAPTION: Clock summary at [2022-08-23 Di 18:47]
   | Headline                                     | Time       |            |         |          |
   |----------------------------------------------+------------+------------+---------+----------|
-  | *Total time*                                 | *5d 16:13* |            |         |          |
+  | *Total time*                                 | *5d 16:32* |            |         |          |
   |----------------------------------------------+------------+------------+---------+----------|
-  | *Theseus [5/11]*                             | *5d 16:13* |            |         |          |
+  | *Theseus [6/11]*                             | *5d 16:32* |            |         |          |
   | \_  /Components [3/8]/                       |            | /5d 11:36/ |         |          |
   | \_    Data types                             |            |            |    1:04 |          |
   | \_    Database                               |            |            |    2:38 |          |
@@ -31,11 +31,11 @@
   | \_  /Cleanup/                                |            | /1:28/     |         |          |
   | \_  /Testing [0/0]/                          |            | /1:30/     |         |          |
   | \_    Database                               |            |            |    1:30 |          |
-  | \_  /Bugs/                                   |            | /1:39/     |         |          |
+  | \_  /Bugs/                                   |            | /1:58/     |         |          |
   | \_    Update timestamp when re-activating... |            |            |    1:16 |          |
-  | \_    Deleting Reminders                     |            |            |    0:23 |          |
+  | \_    Deleting Reminders                     |            |            |    0:42 |          |
   #+END:
-* Theseus [5/11]
+* Theseus [6/11]
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
@@ -221,8 +221,10 @@
     When I reactivate a Reminder, I want its timestamp to be set to some point
     in the the not too distant future. Ideally, I could open a dialog to ask
     for a time.
-*** TODO Deleting Reminders
+*** DONE Deleting Reminders
+    CLOSED: [2022-08-23 Di 18:47]
     :LOGBOOK:
+    CLOCK: [2022-08-23 Di 18:28]--[2022-08-23 Di 18:47] =>  0:19
     CLOCK: [2022-08-22 Mo 20:12]--[2022-08-22 Mo 20:35] =>  0:23
     :END:
     When I try to delete a Reminder, a dialog appears and asks me if I am
