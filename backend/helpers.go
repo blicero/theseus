@@ -2,11 +2,16 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 19. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 21:10:32 krylon>
+// Time-stamp: <2022-08-24 23:53:57 krylon>
 
 package backend
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/grandcat/zeroconf"
+)
 
 func durAbs(d time.Duration) time.Duration {
 	if d < 0 {
@@ -15,3 +20,12 @@ func durAbs(d time.Duration) time.Duration {
 
 	return d
 } // func durAbs(d time.Duration) time.Duration
+
+func rrStr(rr *zeroconf.ServiceEntry) string {
+	return fmt.Sprintf("%q @ %s.%s%s:%d",
+		rr.Instance,
+		rr.Service,
+		rr.HostName,
+		rr.Domain,
+		rr.Port)
+} // func rrStr(rr *zeroconf.ServiceEntry) string

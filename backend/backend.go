@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 21:51:13 krylon>
+// Time-stamp: <2022-08-24 23:36:04 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -54,7 +54,7 @@ type Daemon struct {
 	nLock      sync.RWMutex
 	pending    map[int64]uint32
 	dnssd      *zeroconf.Server
-	peers      []string
+	peers      map[string]*zeroconf.ServiceEntry
 }
 
 // Summon summons a Daemon and returns it. No sacrifice or idolatry is required.
@@ -79,6 +79,7 @@ func Summon(addr string) (*Daemon, error) {
 				".html": "text/html",
 			},
 			pending: make(map[int64]uint32),
+			peers:   make(map[string]*zeroconf.ServiceEntry),
 		}
 	)
 
@@ -129,6 +130,8 @@ func Summon(addr string) (*Daemon, error) {
 			err.Error())
 		return nil, err
 	}
+
+	go d.findPeers()
 
 	return d, nil
 } // func Summon() (*Daemon, error)
