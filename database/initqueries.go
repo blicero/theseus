@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-01 19:01:23 krylon>
+// Time-stamp: <2022-08-24 19:55:32 krylon>
 
 package database
 
@@ -15,6 +15,7 @@ CREATE TABLE reminder (
     due         INTEGER NOT NULL,
     finished    INTEGER NOT NULL DEFAULT 0,
     uuid        TEXT UNIQUE NOT NULL,
+    changed     INTEGER NOT NULL DEFAULT 0,
     UNIQUE (title, due),
     CHECK (due > 1656624376) -- 2022-06-30, ~23:26
 )
@@ -22,6 +23,7 @@ CREATE TABLE reminder (
 	"CREATE INDEX reminder_due_idx ON reminder (due)",
 	"CREATE INDEX reminder_finished_idx ON reminder (finished)",
 	"CREATE INDEX reminder_uuid_idx ON reminder (uuid)",
+	"CREATE INDEX reminder_changed_idx ON reminder (changed)",
 
 	// 	`
 	// CREATE TABLE recurrence (
