@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-23 18:47:27 krylon>
+# Time-stamp: <2022-08-24 22:23:43 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,21 +9,23 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-23 Di 18:47]
+  #+CAPTION: Clock summary at [2022-08-24 Mi 22:23]
   | Headline                                     | Time       |            |         |          |
   |----------------------------------------------+------------+------------+---------+----------|
-  | *Total time*                                 | *5d 16:32* |            |         |          |
+  | *Total time*                                 | *5d 21:33* |            |         |          |
   |----------------------------------------------+------------+------------+---------+----------|
-  | *Theseus [6/11]*                             | *5d 16:32* |            |         |          |
-  | \_  /Components [3/8]/                       |            | /5d 11:36/ |         |          |
+  | *Theseus [6/11]*                             | *5d 21:33* |            |         |          |
+  | \_  /Components [4/10]/                      |            | /5d 16:37/ |         |          |
   | \_    Data types                             |            |            |    1:04 |          |
   | \_    Database                               |            |            |    2:38 |          |
-  | \_    Backend [2/3]                          |            |            |   23:54 |          |
+  | \_    Networking [0/2]                       |            |            |    2:28 |          |
+  | \_      mDNS                                 |            |            |         |     2:28 |
+  | \_    Backend [3/3]                          |            |            |   23:54 |          |
   | \_      Testing                              |            |            |         |     0:35 |
   | \_      Notifications                        |            |            |         |    12:12 |
   | \_      HTTP API                             |            |            |         |     5:30 |
-  | \_    Frontend                               |            |            | 2d 5:31 |          |
-  | \_      Filtering and Sorting                |            |            |         |     6:23 |
+  | \_    Frontend [1/3]                         |            |            | 2d 8:04 |          |
+  | \_      Filtering and Sorting                |            |            |         |     7:43 |
   | \_      Re-Arm a Reminder                    |            |            |         |     3:59 |
   | \_    Other sources [0/2]                    |            |            | 2d 2:29 |          |
   | \_      Framework?                           |            |            |         |     3:11 |
@@ -40,7 +42,7 @@
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
   :END:
-** Components [3/8]
+** Components [4/10]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
@@ -62,10 +64,27 @@
     Go, the cgo overhead would go away.
 
     But after taking a brief look at my fyne experiment, I'll stick with Gtk.
-*** Networking?                                          :feature:meditation:
+*** Networking [0/2]                                     :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
-*** Backend [2/3]
+    A-and while we're at it, I would like using zeroconf/mDNS to have
+    instances find each other.
+**** TODO mDNS
+     :LOGBOOK:
+     CLOCK: [2022-08-24 Mi 19:54]--[2022-08-24 Mi 22:22] =>  2:28
+     :END:
+     [ ] Publish
+     [ ] Discover
+***** [2022-08-24 Mi 19:36]
+      Well, looks like without Internet access I can forget about this. There
+      is a Go package to talk DNS-SD, but I'd need to download the module. I
+      could try and talk to avahi directly via dbus, but without an API
+      reference, I don't think I'd get very far.
+      [2022-08-24 Mi 19:53] - Nevermind, I just used my phone to access the
+      Interwebs and download the zeroconf package, hoping it is not a dead
+      end.
+**** TODO Synchronization
+*** Backend [3/3]
     :PROPERTIES:
     :COOKIE_DATA: todo recursive
     :VISIBILITY: children
@@ -97,8 +116,8 @@
      CLOCK: [2022-07-11 Mo 20:46]--[2022-07-12 Di 01:03] =>  4:17
      CLOCK: [2022-07-09 Sa 17:40]--[2022-07-09 Sa 22:55] =>  5:15
      :END:
-     
-**** IMPLEMENT HTTP API
+**** DONE HTTP API
+     CLOSED: [2022-08-23 Di 19:04]
      :LOGBOOK:
      CLOCK: [2022-07-22 Fr 16:32]--[2022-07-22 Fr 17:50] =>  1:18
      CLOCK: [2022-07-06 Mi 18:27]--[2022-07-06 Mi 20:39] =>  2:12
@@ -114,9 +133,9 @@
      - [X] Edit Reminder
      - [X] Get all Reminders
      - [X] Get pending Reminders
-     - [ ] Get new Reminders
-*** Frontend                                                             :ui:
+*** Frontend [1/3]                                                       :ui:
     :LOGBOOK:
+    CLOCK: [2022-08-23 Di 19:05]--[2022-08-23 Di 20:18] =>  1:13
     CLOCK: [2022-07-20 Mi 19:40]--[2022-07-20 Mi 21:57] =>  2:17
     CLOCK: [2022-07-20 Mi 18:45]--[2022-07-20 Mi 19:20] =>  0:35
     CLOCK: [2022-07-19 Di 20:50]--[2022-07-20 Mi 14:25] => 17:35
@@ -134,6 +153,7 @@
     :END:
 **** TODO Filtering and Sorting
      :LOGBOOK:
+     CLOCK: [2022-08-23 Di 20:18]--[2022-08-23 Di 21:38] =>  1:20
      CLOCK: [2022-08-20 Sa 18:48]--[2022-08-20 Sa 22:10] =>  3:22
      CLOCK: [2022-08-20 Sa 15:45]--[2022-08-20 Sa 18:46] =>  3:01
      :END:
@@ -141,6 +161,11 @@
      supports that explicitly, but it makes matters a little more complicated,
      and I have no Internet access currently ([2022-08-20 Sa]), so I will have
      to experiment a little.
+     ...
+     After some toying around, I find the ListStore can - theoretically - do
+     its own sorting, but it only sorta-kinda works, as I want to sort by more
+     than one column, which seems to be too much for ListStore's or TreeView's
+     little brain, even though I supply the logic. 
 **** TODO Keyboard shortcuts
      I want to do more stuff with the keyboard.
      I am a very keyboard-centric person, so no surprise there, I guess.
