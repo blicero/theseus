@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-24 22:23:43 krylon>
+# Time-stamp: <2022-08-25 00:04:30 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,17 +9,17 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-24 Mi 22:23]
+  #+CAPTION: Clock summary at [2022-08-25 Do 00:04]
   | Headline                                     | Time       |            |         |          |
   |----------------------------------------------+------------+------------+---------+----------|
-  | *Total time*                                 | *5d 21:33* |            |         |          |
+  | *Total time*                                 | *5d 22:15* |            |         |          |
   |----------------------------------------------+------------+------------+---------+----------|
-  | *Theseus [6/11]*                             | *5d 21:33* |            |         |          |
-  | \_  /Components [4/10]/                      |            | /5d 16:37/ |         |          |
+  | *Theseus [6/11]*                             | *5d 22:15* |            |         |          |
+  | \_  /Components [4/10]/                      |            | /5d 17:19/ |         |          |
   | \_    Data types                             |            |            |    1:04 |          |
   | \_    Database                               |            |            |    2:38 |          |
-  | \_    Networking [0/2]                       |            |            |    2:28 |          |
-  | \_      mDNS                                 |            |            |         |     2:28 |
+  | \_    Networking [0/0]                       |            |            |    3:10 |          |
+  | \_      mDNS [1/2]                           |            |            |         |     3:10 |
   | \_    Backend [3/3]                          |            |            |   23:54 |          |
   | \_      Testing                              |            |            |         |     0:35 |
   | \_      Notifications                        |            |            |         |    12:12 |
@@ -64,17 +64,18 @@
     Go, the cgo overhead would go away.
 
     But after taking a brief look at my fyne experiment, I'll stick with Gtk.
-*** Networking [0/2]                                     :feature:meditation:
+*** Networking [0/0]                                     :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
     A-and while we're at it, I would like using zeroconf/mDNS to have
     instances find each other.
-**** TODO mDNS
+**** TODO mDNS [1/2]
      :LOGBOOK:
+     CLOCK: [2022-08-24 Mi 23:22]--[2022-08-25 Do 00:04] =>  0:42
      CLOCK: [2022-08-24 Mi 19:54]--[2022-08-24 Mi 22:22] =>  2:28
      :END:
-     [ ] Publish
-     [ ] Discover
+     - [X] Publish
+     - [ ] Discover
 ***** [2022-08-24 Mi 19:36]
       Well, looks like without Internet access I can forget about this. There
       is a Go package to talk DNS-SD, but I'd need to download the module. I
