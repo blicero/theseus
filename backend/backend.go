@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-23 19:28:31 krylon>
+// Time-stamp: <2022-08-24 21:11:47 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -23,6 +23,7 @@ import (
 	"github.com/blicero/theseus/objects"
 	"github.com/godbus/dbus/v5"
 	"github.com/gorilla/mux"
+	"github.com/grandcat/zeroconf"
 )
 
 const (
@@ -52,6 +53,7 @@ type Daemon struct {
 	signalQ    chan *dbus.Signal
 	nLock      sync.RWMutex
 	pending    map[int64]uint32
+	dnssd      *zeroconf.Server
 }
 
 // Summon summons a Daemon and returns it. No sacrifice or idolatry is required.
@@ -121,6 +123,12 @@ func Summon(addr string) (*Daemon, error) {
 	go d.dbLoop()
 	go d.serveHTTP()
 
+	if err = d.initDNSSd(); err != nil {
+		d.log.Printf("[ERROR] Cannot register Service with DNS-SD: %s\n",
+			err.Error())
+		return nil, err
+	}
+
 	return d, nil
 } // func Summon() (*Daemon, error)
 
@@ -145,6 +153,8 @@ func (d *Daemon) Banish() error {
 		d.log.Printf("[ERROR] Failed to shutdown web server: %s\n",
 			err.Error())
 	}
+
+	d.dnssd.Shutdown()
 
 	if ctx.Err() != nil {
 		err = ctx.Err()
