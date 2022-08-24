@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 21:11:47 krylon>
+// Time-stamp: <2022-08-24 21:25:40 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -149,12 +149,12 @@ func (d *Daemon) Banish() error {
 	)
 	defer cancel()
 
+	d.dnssd.Shutdown()
+
 	if err = d.web.Shutdown(ctx); err != nil {
 		d.log.Printf("[ERROR] Failed to shutdown web server: %s\n",
 			err.Error())
 	}
-
-	d.dnssd.Shutdown()
 
 	if ctx.Err() != nil {
 		err = ctx.Err()

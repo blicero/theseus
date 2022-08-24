@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-09 17:16:06 krylon>
+// Time-stamp: <2022-08-24 21:25:54 krylon>
 
 package main
 
@@ -62,6 +62,8 @@ func main() {
 			os.Exit(1)
 		}
 
+		defer daemon.Banish()
+
 		var sigQ = make(chan os.Signal, 1)
 		var ticker = time.NewTicker(time.Second * 2)
 
@@ -71,7 +73,7 @@ func main() {
 			select {
 			case sig := <-sigQ:
 				fmt.Printf("Quitting on signal %s\n", sig)
-				os.Exit(0)
+				return
 			case <-ticker.C:
 				continue
 			}
