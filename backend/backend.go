@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 21:25:40 krylon>
+// Time-stamp: <2022-08-24 21:51:13 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -54,6 +54,7 @@ type Daemon struct {
 	nLock      sync.RWMutex
 	pending    map[int64]uint32
 	dnssd      *zeroconf.Server
+	peers      []string
 }
 
 // Summon summons a Daemon and returns it. No sacrifice or idolatry is required.
