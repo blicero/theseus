@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-22 19:09:24 krylon>
+// Time-stamp: <2022-08-24 20:12:07 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -559,7 +559,9 @@ func (db *Database) ReminderAdd(r *objects.Reminder) error {
 		msg    string
 		stmt   *sql.Stmt
 		tx     *sql.Tx
+		res    sql.Result
 		status bool
+		now    time.Time
 	)
 
 	if stmt, err = db.getQuery(qid); err != nil {
@@ -599,7 +601,7 @@ func (db *Database) ReminderAdd(r *objects.Reminder) error {
 	}
 
 	stmt = tx.Stmt(stmt)
-	var res sql.Result
+	now = time.Now()
 
 EXEC_QUERY:
 	if res, err = stmt.Exec(
@@ -607,6 +609,7 @@ EXEC_QUERY:
 		r.Description,
 		r.Timestamp.Unix(),
 		r.UniqueID(),
+		now.Unix(),
 	); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
@@ -630,6 +633,7 @@ EXEC_QUERY:
 
 		status = true
 		r.ID = programID
+		r.Changed = now
 		return nil
 	}
 } // func (db *Database) ReminderAdd(r *objects.Reminder) error
@@ -741,16 +745,17 @@ EXEC_QUERY:
 
 	for rows.Next() {
 		var (
-			stamp int64
-			r     objects.Reminder
+			stamp, changed int64
+			r              objects.Reminder
 		)
 
-		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.UUID); err != nil {
+		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.UUID, &changed); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
 
 		r.Timestamp = time.Unix(stamp, 0)
+		r.Changed = time.Unix(changed, 0)
 
 		items = append(items, r)
 	}
@@ -795,16 +800,17 @@ EXEC_QUERY:
 
 	for rows.Next() {
 		var (
-			stamp int64
-			r     objects.Reminder
+			stamp, changed int64
+			r              objects.Reminder
 		)
 
-		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.Finished, &r.UUID); err != nil {
+		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.Finished, &r.UUID, &changed); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
 
 		r.Timestamp = time.Unix(stamp, 0)
+		r.Changed = time.Unix(changed, 0)
 
 		items = append(items, r)
 	}
@@ -848,16 +854,17 @@ EXEC_QUERY:
 
 	for rows.Next() {
 		var (
-			stamp int64
-			r     objects.Reminder
+			stamp, changed int64
+			r              objects.Reminder
 		)
 
-		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.UUID); err != nil {
+		if err = rows.Scan(&r.ID, &r.Title, &r.Description, &stamp, &r.UUID, &changed); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
 
 		r.Timestamp = time.Unix(stamp, 0)
+		r.Changed = time.Unix(changed, 0)
 		r.Finished = true
 
 		items = append(items, r)
@@ -899,16 +906,17 @@ EXEC_QUERY:
 
 	if rows.Next() {
 		var (
-			stamp int64
-			r     = &objects.Reminder{ID: id}
+			stamp, changed int64
+			r              = &objects.Reminder{ID: id}
 		)
 
-		if err = rows.Scan(&r.Title, &r.Description, &stamp, &r.Finished, &r.UUID); err != nil {
+		if err = rows.Scan(&r.Title, &r.Description, &stamp, &r.Finished, &r.UUID, &changed); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
 
 		r.Timestamp = time.Unix(stamp, 0)
+		r.Changed = time.Unix(changed, 0)
 		r.Finished = true
 
 		return r, nil
@@ -927,6 +935,7 @@ func (db *Database) ReminderSetFinished(r *objects.Reminder, flag bool) error {
 		stmt   *sql.Stmt
 		tx     *sql.Tx
 		status bool
+		now    time.Time
 	)
 
 	if stmt, err = db.getQuery(qid); err != nil {
@@ -966,9 +975,10 @@ func (db *Database) ReminderSetFinished(r *objects.Reminder, flag bool) error {
 	}
 
 	stmt = tx.Stmt(stmt)
+	now = time.Now()
 
 EXEC_QUERY:
-	if _, err = stmt.Exec(flag, r.ID); err != nil {
+	if _, err = stmt.Exec(flag, now.Unix(), r.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -982,6 +992,7 @@ EXEC_QUERY:
 	}
 
 	r.Finished = flag
+	r.Changed = now
 	status = true
 	return nil
 } // func (db *Database) ReminderSetFinished(r *objects.Reminder, flag bool) error
@@ -996,6 +1007,7 @@ func (db *Database) ReminderSetTitle(r *objects.Reminder, title string) error {
 		stmt   *sql.Stmt
 		tx     *sql.Tx
 		status bool
+		now    time.Time
 	)
 
 	if stmt, err = db.getQuery(qid); err != nil {
@@ -1035,9 +1047,10 @@ func (db *Database) ReminderSetTitle(r *objects.Reminder, title string) error {
 	}
 
 	stmt = tx.Stmt(stmt)
+	now = time.Now()
 
 EXEC_QUERY:
-	if _, err = stmt.Exec(title, r.ID); err != nil {
+	if _, err = stmt.Exec(title, now.Unix(), r.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1051,6 +1064,7 @@ EXEC_QUERY:
 	}
 
 	r.Title = title
+	r.Changed = now
 	status = true
 	return nil
 } // func (db *Database) ReminderSetTitle(r *objects.Reminder, title string) error
@@ -1064,6 +1078,7 @@ func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error
 		stmt   *sql.Stmt
 		tx     *sql.Tx
 		status bool
+		now    time.Time
 	)
 
 	if stmt, err = db.getQuery(qid); err != nil {
@@ -1103,9 +1118,10 @@ func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error
 	}
 
 	stmt = tx.Stmt(stmt)
+	now = time.Now()
 
 EXEC_QUERY:
-	if _, err = stmt.Exec(t.Unix(), r.ID); err != nil {
+	if _, err = stmt.Exec(t.Unix(), now.Unix(), r.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1119,6 +1135,7 @@ EXEC_QUERY:
 	}
 
 	r.Timestamp = t
+	r.Changed = now
 	status = true
 	return nil
 } // func (db *Database) ReminderSetTimestamp(r *objects.Reminder, t time.Time) error
@@ -1132,6 +1149,7 @@ func (db *Database) ReminderSetDescription(r *objects.Reminder, desc string) err
 		stmt   *sql.Stmt
 		tx     *sql.Tx
 		status bool
+		now    time.Time
 	)
 
 	if stmt, err = db.getQuery(qid); err != nil {
@@ -1171,9 +1189,10 @@ func (db *Database) ReminderSetDescription(r *objects.Reminder, desc string) err
 	}
 
 	stmt = tx.Stmt(stmt)
+	now = time.Now()
 
 EXEC_QUERY:
-	if _, err = stmt.Exec(desc, r.ID); err != nil {
+	if _, err = stmt.Exec(desc, now.Unix(), r.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1187,6 +1206,7 @@ EXEC_QUERY:
 	}
 
 	r.Description = desc
+	r.Changed = now
 	status = true
 	return nil
 } // func (db *Database) ReminderSetDescription(r *objects.Reminder, desc string) error
@@ -1200,6 +1220,7 @@ func (db *Database) ReminderReactivate(r *objects.Reminder, t time.Time) error {
 		stmt   *sql.Stmt
 		tx     *sql.Tx
 		status bool
+		now    time.Time
 	)
 
 	if stmt, err = db.getQuery(qid); err != nil {
@@ -1239,9 +1260,10 @@ func (db *Database) ReminderReactivate(r *objects.Reminder, t time.Time) error {
 	}
 
 	stmt = tx.Stmt(stmt)
+	now = time.Now()
 
 EXEC_QUERY:
-	if _, err = stmt.Exec(t.Unix(), r.ID); err != nil {
+	if _, err = stmt.Exec(t.Unix(), now.Unix(), r.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1255,6 +1277,7 @@ EXEC_QUERY:
 	}
 
 	r.Timestamp = t
+	r.Changed = now
 	r.Finished = false
 	status = true
 	return nil

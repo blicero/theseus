@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-05 19:45:57 krylon>
+// Time-stamp: <2022-08-24 20:05:13 krylon>
 
 package objects
 
@@ -18,6 +18,7 @@ type Reminder struct {
 	Timestamp   time.Time
 	Finished    bool
 	UUID        string
+	Changed     time.Time
 }
 
 // Due returns the Reminder's due time
