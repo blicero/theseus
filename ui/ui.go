@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-23 18:40:16 krylon>
+// Time-stamp: <2022-08-23 19:48:07 krylon>
 
 package ui
 
@@ -173,9 +173,11 @@ func Create(srv string) (*GUI, error) {
 		return nil, err
 	}
 
-	// win.store.SetDefaultSortFunc(win.reminderCmpFunc)
-	// win.store.SetSortColumnId(2, gtk.SORT_ASCENDING)
-	// win.view.SetReorderable(true)
+	win.store.SetDefaultSortFunc(win.reminderCmpFunc)
+	win.store.SetSortFunc(2, win.reminderCmpFunc)
+	win.store.SetSortFunc(3, win.reminderCmpFunc)
+	win.store.SetSortColumnId(2, gtk.SORT_ASCENDING)
+	//win.view.SetReorderable(true)
 
 	for i, c := range cols {
 		var (
@@ -812,6 +814,7 @@ func (g *GUI) reminderEdit() {
 		titleEntry, bodyEntry              *gtk.Entry
 		hourInput, minuteInput             *gtk.SpinButton
 		timeLbl, sepLbl, titleLbl, bodyLbl *gtk.Label
+		finishedCB                         *gtk.CheckButton
 		id                                 int64
 		gval                               *glib.Value
 		rval                               any
@@ -853,7 +856,7 @@ func (g *GUI) reminderEdit() {
 		g.displayMsg(msg)
 		return
 	} else if dlg, err = gtk.DialogNewWithButtons(
-		"Choose Server",
+		fmt.Sprintf("Edit %q", r.Title),
 		g.win,
 		gtk.DIALOG_MODAL,
 		[]any{
@@ -913,6 +916,10 @@ func (g *GUI) reminderEdit() {
 		g.log.Printf("[ERROR] Cannot create Entry for Body: %s\n",
 			err.Error())
 		return
+	} else if finishedCB, err = gtk.CheckButtonNewWithLabel("Finished?"); err != nil {
+		g.log.Printf("[ERROR] Cannot create CheckButton: %s\n",
+			err.Error())
+		return
 	} else if dbox, err = dlg.GetContentArea(); err != nil {
 		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog: %s\n",
 			err.Error())
@@ -927,6 +934,7 @@ func (g *GUI) reminderEdit() {
 	grid.InsertRow(1)
 	grid.InsertRow(2)
 	grid.InsertRow(3)
+	grid.InsertRow(4)
 
 	grid.Attach(cal, 0, 0, 4, 1)
 	grid.Attach(timeLbl, 0, 1, 1, 1)
@@ -937,6 +945,9 @@ func (g *GUI) reminderEdit() {
 	grid.Attach(titleEntry, 1, 2, 3, 1)
 	grid.Attach(bodyLbl, 0, 3, 1, 1)
 	grid.Attach(bodyEntry, 1, 3, 3, 1)
+	grid.Attach(finishedCB, 0, 4, 3, 1)
+
+	finishedCB.SetActive(r.Finished)
 
 	dbox.PackStart(grid, true, true, 0)
 	dlg.ShowAll()
@@ -992,6 +1003,7 @@ BEGIN:
 		time.Local)
 	r.Title, _ = titleEntry.GetText()
 	r.Description, _ = bodyEntry.GetText()
+	r.Finished = finishedCB.GetActive()
 
 	g.log.Printf("[DEBUG] Reminder: %#v\n",
 		&r)
@@ -1334,11 +1346,27 @@ func (g *GUI) reminderCmpFunc(model *gtk.TreeModel, a, b *gtk.TreeIter) int {
 	r1 = g.reminders[int64(id1)]
 	r2 = g.reminders[int64(id2)]
 
-	if r1.Timestamp.Before(r2.Timestamp) {
-		return -1
-	} else if r1.Timestamp.After(r2.Timestamp) {
-		return 1
-	} else {
-		return strings.Compare(r1.Title, r2.Title)
+	if r1.Finished != r2.Finished {
+		if r1.Finished {
+			return 1
+		} else {
+			return -1
+		}
+	} else if !r1.Timestamp.Equal(r2.Timestamp) {
+		if r1.Timestamp.Before(r2.Timestamp) {
+			return -1
+		} else {
+			return 1
+		}
 	}
+
+	return strings.Compare(r1.Title, r2.Title)
+
+	// if r1.Timestamp.Before(r2.Timestamp) {
+	// 	return -1
+	// } else if r1.Timestamp.After(r2.Timestamp) {
+	// 	return 1
+	// } else {
+	// 	return strings.Compare(r1.Title, r2.Title)
+	// }
 } // func (g *GUI) reminderCmpFunc(a, b *gtk.TreeIter) int
