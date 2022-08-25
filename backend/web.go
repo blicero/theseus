@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-22 20:11:24 krylon>
+// Time-stamp: <2022-08-26 00:05:52 krylon>
 
 package backend
 
@@ -28,6 +28,7 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/update", d.handleReminderUpdate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/reactivate", d.handleReminderReactivate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/delete", d.handleReminderDelete)
+	d.router.HandleFunc("/peer/all", d.handlePeerListGet)
 
 	return nil
 } // func (d *Daemon) initWebHandlers() error
@@ -566,6 +567,53 @@ func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request) {
 SEND_RESPONSE:
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request)
+
+func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err   error
+		buf   []byte
+		peers []objects.Peer
+	)
+
+	peers = make([]objects.Peer, 0)
+
+	d.log.Println("[TRACE] Acquire pLock")
+	d.pLock.RLock()
+	for _, e := range d.peers {
+		var p = objects.Peer{
+			Instance: e.Instance,
+			Hostname: e.HostName,
+			Domain:   e.Domain,
+			Port:     e.Port,
+		}
+
+		peers = append(peers, p)
+	}
+	d.pLock.RUnlock()
+	d.log.Println("[TRACE] Released pLock")
+
+	if buf, err = ffjson.Marshal(peers); err != nil {
+		d.log.Printf("[ERROR] Cannot serialize peer list of %d members: %s\n",
+			len(peers),
+			err.Error())
+		buf = []byte(fmt.Sprintf("Cannot serialize list of %d peers: %s",
+			len(peers),
+			err.Error()))
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Length", strconv.Itoa(len(buf)))
+		w.WriteHeader(500)
+		w.Write(buf) // nolint: errcheck
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buf)))
+	w.WriteHeader(200)
+	w.Write(buf) // nolint: errcheck
+} // func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// Helpers //////////////////////////////////////////////////////////////////////////////////////

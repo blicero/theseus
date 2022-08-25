@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-23 19:48:07 krylon>
+// Time-stamp: <2022-08-25 23:53:01 krylon>
 
 package ui
 
@@ -35,6 +35,7 @@ const (
 	uriReminderDelete     = "/reminder/%d/delete"
 	uriReminderEdit       = "/reminder/%d/update"
 	uriReminderReactivate = "/reminder/%d/reactivate"
+	uriPeerListGet        = "/peer/all"
 )
 
 type column struct {
@@ -226,7 +227,8 @@ func Create(srv string) (*GUI, error) {
 		common.AppName,
 		common.Version))
 
-	glib.TimeoutAdd(uint(10000), win.fetchReminders)
+	glib.TimeoutAdd(uint(5000), win.fetchReminders)
+	glib.TimeoutAdd(uint(5000), win.fetchPeers)
 	glib.IdleAdd(func() bool {
 		win.fetchReminders()
 		return false
@@ -470,6 +472,82 @@ func (g *GUI) fetchReminders() bool {
 
 	return true
 } // func (g *GUI) fetchReminders() bool
+
+func (g *GUI) fetchPeers() bool {
+	var (
+		err         error
+		rawURL, msg string
+		res         *http.Response
+	)
+
+	krylib.Trace()
+
+	rawURL = fmt.Sprintf("http://%s%s",
+		g.srv,
+		uriPeerListGet)
+
+	if _, err = url.Parse(rawURL); err != nil {
+		msg = fmt.Sprintf("Invalid URL %q: %s",
+			rawURL,
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.pushMsg(msg)
+		return true
+	} else if res, err = g.web.Get(rawURL); err != nil {
+		g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
+			rawURL,
+			err.Error())
+
+		return true
+	} else if res.StatusCode != 200 {
+		err = fmt.Errorf("Unexpected HTTP status from backend: %s",
+			res.Status)
+		g.log.Printf("[ERROR] %s\n",
+			err.Error())
+		return true
+	}
+
+	defer res.Body.Close() // nolint: errcheck
+
+	var (
+		rsize int
+		body  []byte
+		peers []objects.Peer
+	)
+
+	if res.ContentLength == -1 {
+		body = make([]byte, defaultBufSize)
+	} else {
+		body = make([]byte, res.ContentLength)
+	}
+
+	if rsize, err = res.Body.Read(body); err != nil && err != io.EOF {
+		g.log.Printf("[ERROR] Failed to read HTTP response body: %s\n",
+			err.Error())
+		return true
+	}
+
+	peers = make([]objects.Peer, 0, 8)
+
+	if err = ffjson.Unmarshal(body[:rsize], &peers); err != nil {
+		g.log.Printf("[ERROR] Cannot parse HTTP response body: %s\n\n%s\n",
+			err.Error(),
+			body[:rsize])
+		return true
+	}
+
+	g.log.Printf("[TRACE] Received %d peers from Backend\n", len(peers))
+
+	for i, p := range peers {
+		g.log.Printf("[DEBUG] Got Peer %d/%d: %s\n",
+			i+1,
+			len(peers),
+			&p)
+		g.pushMsg(p.String())
+	}
+
+	return true
+} // func (g *GUI) fetchPeers() bool
 
 func (g *GUI) setServer() {
 	var (
