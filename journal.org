@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-26 00:44:34 krylon>
+# Time-stamp: <2022-08-26 21:05:02 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,17 +9,18 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-26 Fr 00:44]
+  #+CAPTION: Clock summary at [2022-08-26 Fr 21:05]
   | Headline                                     | Time      |            |         |          |
   |----------------------------------------------+-----------+------------+---------+----------|
-  | *Total time*                                 | *6d 1:29* |            |         |          |
+  | *Total time*                                 | *6d 2:48* |            |         |          |
   |----------------------------------------------+-----------+------------+---------+----------|
-  | *Theseus [6/11]*                             | *6d 1:29* |            |         |          |
-  | \_  /Components [4/10]/                      |           | /5d 20:33/ |         |          |
+  | *Theseus [6/11]*                             | *6d 2:48* |            |         |          |
+  | \_  /Components [4/10]/                      |           | /5d 21:52/ |         |          |
   | \_    Data types                             |           |            |    1:04 |          |
   | \_    Database                               |           |            |    2:38 |          |
-  | \_    Networking [0/0]                       |           |            |    6:24 |          |
-  | \_      mDNS [1/2]                           |           |            |         |     6:24 |
+  | \_    Networking [0/0]                       |           |            |    7:43 |          |
+  | \_      mDNS [2/2]                           |           |            |         |     6:56 |
+  | \_      Synchronization                      |           |            |         |     0:47 |
   | \_    Backend [3/3]                          |           |            |   23:54 |          |
   | \_      Testing                              |           |            |         |     0:35 |
   | \_      Notifications                        |           |            |         |    12:12 |
@@ -69,14 +70,15 @@
     can sync reminders between machines. I think that's a nice idea.
     A-and while we're at it, I would like using zeroconf/mDNS to have
     instances find each other.
-**** TODO mDNS [1/2]
+**** TODO mDNS [2/2]
      :LOGBOOK:
+     CLOCK: [2022-08-26 Fr 19:31]--[2022-08-26 Fr 20:03] =>  0:32
      CLOCK: [2022-08-25 Do 21:18]--[2022-08-26 Fr 00:32] =>  3:14
      CLOCK: [2022-08-24 Mi 23:22]--[2022-08-25 Do 00:04] =>  0:42
      CLOCK: [2022-08-24 Mi 19:54]--[2022-08-24 Mi 22:22] =>  2:28
      :END:
      - [X] Publish
-     - [ ] Discover
+     - [X] Discover
 ***** [2022-08-26 Fr 00:32]
       It was a bit tricky, but I think I made some real progress tonight.
 ***** [2022-08-24 Mi 19:36]
@@ -88,6 +90,9 @@
       Interwebs and download the zeroconf package, hoping it is not a dead
       end.
 **** TODO Synchronization
+     :LOGBOOK:
+     CLOCK: [2022-08-26 Fr 20:17]--[2022-08-26 Fr 21:04] =>  0:47
+     :END:
 *** Backend [3/3]
     :PROPERTIES:
     :COOKIE_DATA: todo recursive
