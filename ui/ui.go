@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-25 23:53:01 krylon>
+// Time-stamp: <2022-08-26 20:43:48 krylon>
 
 package ui
 
@@ -73,6 +73,12 @@ var cols = []column{
 		colType: glib.TYPE_STRING,
 		title:   "UUID",
 		display: false,
+		edit:    false,
+	},
+	column{
+		colType: glib.TYPE_STRING,
+		title:   "Changed",
+		display: true,
 		edit:    false,
 	},
 }
@@ -422,6 +428,7 @@ func (g *GUI) fetchReminders() bool {
 			ok   bool
 			iter *gtk.TreeIter
 			tstr = r.Timestamp.Format(common.TimestampFormat)
+			cstr = r.Changed.Format(common.TimestampFormat)
 		)
 
 		idList[r.ID] = true
@@ -432,8 +439,8 @@ func (g *GUI) fetchReminders() bool {
 
 			g.store.Set( // nolint: errcheck
 				iter,
-				[]int{0, 1, 2, 3, 4},
-				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID},
+				[]int{0, 1, 2, 3, 4, 5},
+				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID, cstr},
 			)
 		} else if iter, err = g.getIter(r.ID); err != nil || iter == nil {
 			g.log.Printf("{ERROR] Could not get TreeIter for Reminder #%d\n",
@@ -442,8 +449,8 @@ func (g *GUI) fetchReminders() bool {
 		} else {
 			g.store.Set( // nolint: errcheck
 				iter,
-				[]int{0, 1, 2, 3, 4},
-				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID},
+				[]int{0, 1, 2, 3, 4, 5},
+				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID, cstr},
 			)
 		}
 	}
@@ -864,8 +871,8 @@ BEGIN:
 
 		g.store.Set( // nolint: errcheck
 			iter,
-			[]int{0, 1, 2, 3},
-			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished},
+			[]int{0, 1, 2, 3, 4, 5},
+			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished, r.UUID, r.Changed.Format(common.TimestampFormat)},
 		)
 
 		g.reminders[r.ID] = r
@@ -1149,11 +1156,15 @@ BEGIN:
 	// we edited in the first place.
 	if response.Status {
 		g.reminders[r.ID] = r
+		var tstr, cstr string
+
+		tstr = r.Timestamp.Format(common.TimestampFormat)
+		cstr = r.Changed.Format(common.TimestampFormat)
 
 		g.store.Set( // nolint: errcheck
 			iter,
-			[]int{0, 1, 2, 3},
-			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished},
+			[]int{0, 1, 2, 3, 5},
+			[]any{r.ID, r.Title, tstr, r.Finished, cstr},
 		)
 	}
 } // func (g *GUI) reminderEdit()
@@ -1238,15 +1249,15 @@ func (g *GUI) reminderReactivate() {
 		response)
 
 	if response.Status {
-		g.store.Set( // nolint: errcheck
-			iter,
-			[]int{3},
-			[]any{true},
-		)
-
 		var r = g.reminders[id]
 		r.Finished = false
+		r.Changed = time.Now()
 		g.reminders[id] = r
+		g.store.Set( // nolint: errcheck
+			iter,
+			[]int{3, 5},
+			[]any{true, r.Changed.Format(common.TimestampFormat)},
+		)
 	}
 } // func (g *GUI) reminderReactivate()
 
@@ -1427,24 +1438,16 @@ func (g *GUI) reminderCmpFunc(model *gtk.TreeModel, a, b *gtk.TreeIter) int {
 	if r1.Finished != r2.Finished {
 		if r1.Finished {
 			return 1
-		} else {
-			return -1
 		}
+
+		return -1
 	} else if !r1.Timestamp.Equal(r2.Timestamp) {
 		if r1.Timestamp.Before(r2.Timestamp) {
 			return -1
-		} else {
-			return 1
 		}
+
+		return 1
 	}
 
 	return strings.Compare(r1.Title, r2.Title)
-
-	// if r1.Timestamp.Before(r2.Timestamp) {
-	// 	return -1
-	// } else if r1.Timestamp.After(r2.Timestamp) {
-	// 	return 1
-	// } else {
-	// 	return strings.Compare(r1.Title, r2.Title)
-	// }
 } // func (g *GUI) reminderCmpFunc(a, b *gtk.TreeIter) int
