@@ -2,16 +2,16 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 24. 08. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-26 00:12:42 krylon>
+// Time-stamp: <2022-08-26 21:08:27 krylon>
 
 package backend
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/blicero/theseus/common"
 	"github.com/grandcat/zeroconf"
@@ -29,18 +29,11 @@ var (
 
 func (d *Daemon) initDNSSd() error {
 	var (
-		err      error
-		match    []string
-		hostname string
-		port     int64
-		srv      *zeroconf.Server
+		err   error
+		match []string
+		port  int64
+		srv   *zeroconf.Server
 	)
-
-	if hostname, err = os.Hostname(); err != nil {
-		d.log.Printf("[ERROR] Cannot query system hostname: %s\n",
-			err.Error())
-		return err
-	}
 
 	match = addrPat.FindStringSubmatch(d.web.Addr)
 
@@ -55,7 +48,7 @@ func (d *Daemon) initDNSSd() error {
 
 	var instanceName = fmt.Sprintf("%s@%s",
 		srvName,
-		hostname)
+		d.hostname)
 
 	if srv, err = zeroconf.Register(instanceName, srvService, srvDomain, int(port), txt, nil); err != nil {
 		d.log.Printf("[ERROR] Cannot register service with DNS-SD: %s\n",
@@ -102,9 +95,13 @@ func (d *Daemon) processServiceEntries(queue <-chan *zeroconf.ServiceEntry) {
 		var str = rrStr(entry)
 		d.log.Printf("[DEBUG] Received one ServiceEntry: %s\n",
 			str)
-		if !peerPat.MatchString(entry.Instance) {
+
+		if strings.HasPrefix(entry.HostName, d.hostname) {
+			continue
+		} else if !peerPat.MatchString(entry.Instance) {
 			continue
 		}
+
 		d.log.Println("[TRACE] Acquire pLock")
 		d.pLock.Lock()
 		d.peers[str] = entry

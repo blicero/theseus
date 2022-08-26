@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-25 22:46:05 krylon>
+// Time-stamp: <2022-08-26 21:06:55 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -43,6 +44,7 @@ type Daemon struct {
 	bus        *dbus.Conn
 	lock       sync.RWMutex // nolint: structcheck,unused
 	active     bool
+	hostname   string
 	Queue      chan objects.Notification
 	web        http.Server
 	router     *mux.Router
@@ -94,6 +96,10 @@ func Summon(addr string) (*Daemon, error) {
 		return nil, err
 	} else if d.bus, err = dbus.SessionBus(); err != nil {
 		d.log.Printf("[ERROR] Failed to connect to DBus Session bus: %s\n",
+			err.Error())
+		return nil, err
+	} else if d.hostname, err = os.Hostname(); err != nil {
+		d.log.Printf("[ERROR] Cannot query system hostname: %s\n",
 			err.Error())
 		return nil, err
 	}
