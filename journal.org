@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-26 21:05:02 krylon>
+# Time-stamp: <2022-08-30 21:49:17 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,41 +9,42 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-26 Fr 21:05]
-  | Headline                                     | Time      |            |         |          |
-  |----------------------------------------------+-----------+------------+---------+----------|
-  | *Total time*                                 | *6d 2:48* |            |         |          |
-  |----------------------------------------------+-----------+------------+---------+----------|
-  | *Theseus [6/11]*                             | *6d 2:48* |            |         |          |
-  | \_  /Components [4/10]/                      |           | /5d 21:52/ |         |          |
-  | \_    Data types                             |           |            |    1:04 |          |
-  | \_    Database                               |           |            |    2:38 |          |
-  | \_    Networking [0/0]                       |           |            |    7:43 |          |
-  | \_      mDNS [2/2]                           |           |            |         |     6:56 |
-  | \_      Synchronization                      |           |            |         |     0:47 |
-  | \_    Backend [3/3]                          |           |            |   23:54 |          |
-  | \_      Testing                              |           |            |         |     0:35 |
-  | \_      Notifications                        |           |            |         |    12:12 |
-  | \_      HTTP API                             |           |            |         |     5:30 |
-  | \_    Frontend [1/3]                         |           |            | 2d 8:04 |          |
-  | \_      Filtering and Sorting                |           |            |         |     7:43 |
-  | \_      Re-Arm a Reminder                    |           |            |         |     3:59 |
-  | \_    Other sources [0/2]                    |           |            | 2d 2:29 |          |
-  | \_      Framework?                           |           |            |         |     3:11 |
-  | \_      logreader                            |           |            |         | 1d 23:18 |
-  | \_  /Cleanup/                                |           | /1:28/     |         |          |
-  | \_  /Testing [0/0]/                          |           | /1:30/     |         |          |
-  | \_    Database                               |           |            |    1:30 |          |
-  | \_  /Bugs/                                   |           | /1:58/     |         |          |
-  | \_    Update timestamp when re-activating... |           |            |    1:16 |          |
-  | \_    Deleting Reminders                     |           |            |    0:42 |          |
+  #+CAPTION: Clock summary at [2022-08-30 Di 21:49]
+  | Headline                                     | Time       |           |         |          |      |
+  |----------------------------------------------+------------+-----------+---------+----------+------|
+  | *Total time*                                 | *6d 13:17* |           |         |          |      |
+  |----------------------------------------------+------------+-----------+---------+----------+------|
+  | *Theseus [6/11]*                             | *6d 13:17* |           |         |          |      |
+  | \_  /Components [6/11]/                      |            | /6d 8:21/ |         |          |      |
+  | \_    Data types                             |            |           |    1:04 |          |      |
+  | \_    Database                               |            |           |    2:38 |          |      |
+  | \_    Networking [2/3]                       |            |           |   18:12 |          |      |
+  | \_      mDNS [1/1]                           |            |           |         |    14:08 |      |
+  | \_        Cache invalidation                 |            |           |         |          | 3:49 |
+  | \_      Synchronization                      |            |           |         |     4:04 |      |
+  | \_    Backend [3/3]                          |            |           |   23:54 |          |      |
+  | \_      Testing                              |            |           |         |     0:35 |      |
+  | \_      Notifications                        |            |           |         |    12:12 |      |
+  | \_      HTTP API                             |            |           |         |     5:30 |      |
+  | \_    Frontend [1/3]                         |            |           | 2d 8:04 |          |      |
+  | \_      Filtering and Sorting                |            |           |         |     7:43 |      |
+  | \_      Re-Arm a Reminder                    |            |           |         |     3:59 |      |
+  | \_    Other sources [0/2]                    |            |           | 2d 2:29 |          |      |
+  | \_      Framework?                           |            |           |         |     3:11 |      |
+  | \_      logreader                            |            |           |         | 1d 23:18 |      |
+  | \_  /Cleanup/                                |            | /1:28/    |         |          |      |
+  | \_  /Testing [0/0]/                          |            | /1:30/    |         |          |      |
+  | \_    Database                               |            |           |    1:30 |          |      |
+  | \_  /Bugs/                                   |            | /1:58/    |         |          |      |
+  | \_    Update timestamp when re-activating... |            |           |    1:16 |          |      |
+  | \_    Deleting Reminders                     |            |           |    0:42 |          |      |
   #+END:
 * Theseus [6/11]
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
   :END:
-** Components [4/10]
+** Components [6/11]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
@@ -65,13 +66,15 @@
     Go, the cgo overhead would go away.
 
     But after taking a brief look at my fyne experiment, I'll stick with Gtk.
-*** Networking [0/0]                                     :feature:meditation:
+*** Networking [2/3]                                     :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
     A-and while we're at it, I would like using zeroconf/mDNS to have
     instances find each other.
-**** TODO mDNS [2/2]
+**** DONE mDNS [1/1]
+     CLOSED: [2022-08-30 Di 19:52]
      :LOGBOOK:
+     CLOCK: [2022-08-27 Sa 18:26]--[2022-08-27 Sa 21:49] =>  3:23
      CLOCK: [2022-08-26 Fr 19:31]--[2022-08-26 Fr 20:03] =>  0:32
      CLOCK: [2022-08-25 Do 21:18]--[2022-08-26 Fr 00:32] =>  3:14
      CLOCK: [2022-08-24 Mi 23:22]--[2022-08-25 Do 00:04] =>  0:42
@@ -79,6 +82,32 @@
      :END:
      - [X] Publish
      - [X] Discover
+***** Final notes (hopefully)
+      This was more tedious than I had anticipated, but now I found a solution
+      that is a bit ugly but seems to work reasonably well: For incoming
+      ServiceEntries from peers, I adjust the TTL to a small value (like, 5
+      seconds). I run a goroutine that periodically removes epired peers from
+      the cache. And I restart the service browser periodically. This way,
+      peers that go offline are removed from the cache quickly, and peers that
+      go online are detected quickly.
+      I could build something myself, but if there are standardized protocols
+      to do this, including 3rd party libraries to implement / interact with
+      those protocols, I prefer to go that way.
+***** DONE Cache invalidation                                     :internals:
+      CLOSED: [2022-08-30 Di 19:52]
+      :LOGBOOK:
+      CLOCK: [2022-08-30 Di 19:00]--[2022-08-30 Di 19:52] =>  0:52
+      CLOCK: [2022-08-29 Mo 22:23]--[2022-08-29 Mo 23:00] =>  0:37
+      CLOCK: [2022-08-29 Mo 18:51]--[2022-08-29 Mo 21:11] =>  2:20
+      :END:
+      This is going to be a little hairy, but I would prefer a more elegant
+      solution than periodically discarding the entire cache and start a new
+      Browser, especially since my first naive attempt at that did not work
+      very well.
+***** [2022-08-27 Sa 18:26]
+      I need to deal with disappearing peers gracefully. 
+      Alas, with DNS-SD, the default TTL of the SRV records is nearly an hour,
+      so that is not useful for caching. :-| 
 ***** [2022-08-26 Fr 00:32]
       It was a bit tricky, but I think I made some real progress tonight.
 ***** [2022-08-24 Mi 19:36]
@@ -88,11 +117,20 @@
       reference, I don't think I'd get very far.
       [2022-08-24 Mi 19:53] - Nevermind, I just used my phone to access the
       Interwebs and download the zeroconf package, hoping it is not a dead
-      end.
+      end. -- PS: It was a small download, less than 1MiB including
+      dependencies, and it works reasonably well.
 **** TODO Synchronization
      :LOGBOOK:
+     CLOCK: [2022-08-30 Di 19:57]--[2022-08-30 Di 21:48] =>  1:51
+     CLOCK: [2022-08-27 Sa 17:04]--[2022-08-27 Sa 17:05] =>  0:01
+     CLOCK: [2022-08-26 Fr 21:15]--[2022-08-26 Fr 22:40] =>  1:25
      CLOCK: [2022-08-26 Fr 20:17]--[2022-08-26 Fr 21:04] =>  0:47
      :END:
+***** [2022-08-30 Di 19:57]
+      Now that I've got the peer discovery more or less sorted out (I hope,
+      naively), I can finally turn to the problem of how to synchronize my
+      data across several nodes.
+      This is actually pretty hairy.
 *** Backend [3/3]
     :PROPERTIES:
     :COOKIE_DATA: todo recursive
