@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 24. 08. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-26 21:08:27 krylon>
+// Time-stamp: <2022-08-30 19:42:10 krylon>
 
 package backend
 
@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blicero/theseus/common"
 	"github.com/grandcat/zeroconf"
@@ -21,6 +22,7 @@ const (
 	srvName    = "Theseus"
 	srvService = "_http._tcp"
 	srvDomain  = "local."
+	srvTTL     = 5
 )
 
 var (
@@ -56,34 +58,46 @@ func (d *Daemon) initDNSSd() error {
 		return err
 	}
 
+	// Unfortunately, this triggers a race condition
+	// srv.TTL(srvTTL)
+
 	d.dnssd = srv
 	return nil
 } // func (d *Daemon) initDnsSd() error
 
 func (d *Daemon) findPeers() {
-	var (
-		err      error
-		resolver *zeroconf.Resolver
-		entries  chan *zeroconf.ServiceEntry
-	)
 
-	if resolver, err = zeroconf.NewResolver(nil); err != nil {
-		d.log.Printf("[ERROR] Cannot create DNS-SD Resolver: %s\n",
-			err.Error())
-		return
-	}
+	go d.purgeLoop()
 
-	entries = make(chan *zeroconf.ServiceEntry)
+	for d.IsAlive() {
+		var (
+			err      error
+			resolver *zeroconf.Resolver
+			entries  chan *zeroconf.ServiceEntry
+		)
 
-	go d.processServiceEntries(entries)
+		if resolver, err = zeroconf.NewResolver(nil); err != nil {
+			d.log.Printf("[ERROR] Cannot create DNS-SD Resolver: %s\n",
+				err.Error())
+			return
+		}
 
-	// ctx, _ := context.WithCancel(context.Background())
-	// defer cancel()
+		entries = make(chan *zeroconf.ServiceEntry)
 
-	if err = resolver.Browse(context.TODO(), srvService, srvDomain, entries); err != nil {
-		d.log.Printf("{ERROR] Failed to browse for %s: %s\n",
-			srvService,
-			err.Error())
+		go d.processServiceEntries(entries)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		// defer cancel()
+
+		if err = resolver.Browse(ctx, srvService, srvDomain, entries); err != nil {
+			d.log.Printf("{ERROR] Failed to browse for %s: %s\n",
+				srvService,
+				err.Error())
+		}
+
+		time.Sleep(time.Second * srvTTL)
+		cancel()
+
 	}
 } // func (d *Daemon) findPeers()
 
@@ -102,10 +116,28 @@ func (d *Daemon) processServiceEntries(queue <-chan *zeroconf.ServiceEntry) {
 			continue
 		}
 
+		entry.TTL = srvTTL
+
 		d.log.Println("[TRACE] Acquire pLock")
 		d.pLock.Lock()
-		d.peers[str] = entry
+		d.peers[str] = mkService(entry)
 		d.pLock.Unlock()
 		d.log.Println("[TRACE] Released pLock")
 	}
 } // func (d *Daemon) processServiceEntries(queue <- chan *zeroconf.ServiceEntry)
+
+func (d *Daemon) purgeLoop() {
+	for d.IsAlive() {
+		time.Sleep(time.Second * srvTTL)
+
+		d.pLock.Lock()
+		for k, srv := range d.peers {
+			if srv.isExpired() {
+				d.log.Printf("[DEBUG] Remove Peer %s from cache\n",
+					k)
+				delete(d.peers, k)
+			}
+		}
+		d.pLock.Unlock()
+	}
+} // func (d *Daemon) purgeLoop()

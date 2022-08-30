@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-26 21:06:55 krylon>
+// Time-stamp: <2022-08-29 20:32:44 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -37,6 +37,22 @@ const (
 	defaultReminderDelay = time.Second * 300
 )
 
+type service struct {
+	rr        *zeroconf.ServiceEntry
+	timestamp time.Time
+}
+
+func mkService(rr *zeroconf.ServiceEntry) service {
+	return service{
+		rr:        rr,
+		timestamp: time.Now(),
+	}
+}
+
+func (s *service) isExpired() bool {
+	return s.timestamp.Add(time.Second * time.Duration(s.rr.TTL)).Before(time.Now())
+} // func (s *service) IsExpired() bool
+
 // Daemon is the centerpiece of the backend, coordinating between the database, the clients, etc.
 type Daemon struct {
 	log        *log.Logger
@@ -57,7 +73,7 @@ type Daemon struct {
 	pending    map[int64]uint32
 	dnssd      *zeroconf.Server
 	pLock      sync.RWMutex
-	peers      map[string]*zeroconf.ServiceEntry
+	peers      map[string]service
 }
 
 // Summon summons a Daemon and returns it. No sacrifice or idolatry is required.
@@ -82,7 +98,7 @@ func Summon(addr string) (*Daemon, error) {
 				".html": "text/html",
 			},
 			pending: make(map[int64]uint32),
-			peers:   make(map[string]*zeroconf.ServiceEntry),
+			peers:   make(map[string]service),
 		}
 	)
 
