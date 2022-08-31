@@ -2,12 +2,15 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-26 00:05:52 krylon>
+// Time-stamp: <2022-08-31 21:22:47 krylon>
 
 package backend
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,6 +32,8 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/reactivate", d.handleReminderReactivate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/delete", d.handleReminderDelete)
 	d.router.HandleFunc("/peer/all", d.handlePeerListGet)
+	d.router.HandleFunc("/sync/pull", d.handleReminderSyncPull)
+	d.router.HandleFunc("/sync/push", d.handleReminderSyncPush)
 
 	return nil
 } // func (d *Daemon) initWebHandlers() error
@@ -568,6 +573,229 @@ SEND_RESPONSE:
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request)
 
+// nolint: unused
+func (d *Daemon) handleReminderSyncPull(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err       error
+		msg       string
+		db        *database.Database
+		buf       []byte
+		reminders []objects.Reminder
+	)
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if reminders, err = db.ReminderGetAll(); err != nil {
+		msg = fmt.Sprintf("Cannot get list of Reminders from database: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n",
+			msg)
+		goto SEND_ERROR
+	} else if buf, err = ffjson.Marshal(reminders); err != nil {
+		msg = fmt.Sprintf("Cannot serialize Response: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n",
+			msg)
+		goto SEND_ERROR
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buf)))
+	w.WriteHeader(200)
+	w.Write(buf) // nolint: errcheck
+	return
+
+SEND_ERROR:
+	var res = objects.Response{
+		ID:      d.getID(),
+		Message: msg,
+	}
+
+	if buf, err = ffjson.Marshal(&res); err != nil {
+		d.log.Printf("[ERROR] Cannot serizalize Response object: %s\n",
+			err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buf)))
+	w.WriteHeader(500)
+	w.Write(buf) // nolint: errcheck
+} // func (d *Daemon) handleReminderSyncPull(w http.ResponseWriter, r *http.Request)
+
+func (d *Daemon) handleReminderSyncPush(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err    error
+		buf    bytes.Buffer
+		remote []objects.Reminder
+		msg    string
+		status bool
+		res    objects.Response
+	)
+
+	if r.Method != "POST" {
+		msg = fmt.Sprintf("Invalid HTTP method %s, POST is required",
+			r.Method)
+		d.log.Printf("[ERROR] %s\n", msg)
+	} else if _, err = io.Copy(&buf, r.Body); err != nil {
+		msg = fmt.Sprintf("Cannot read Request body: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+	} else if err = ffjson.Unmarshal(buf.Bytes(), &remote); err != nil {
+		msg = fmt.Sprintf("Cannot parse JSON data: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+	} else if err = d.reminderMerge(remote); err != nil {
+		msg = fmt.Sprintf("Failed to merge Reminders: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+	} else {
+		msg = "Success"
+		status = true
+	}
+
+	res.ID = d.getID()
+	res.Status = status
+	res.Message = msg
+
+	d.sendResponseJSON(w, &res)
+} // func (d *Daemon) handleReminderSyncPush(w http.ResponseWriter, r *http.Request)
+
+func (d *Daemon) reminderMerge(remote []objects.Reminder) error {
+	var (
+		err      error
+		local    []objects.Reminder
+		db       *database.Database
+		idmap    map[string]int
+		errmsg   string
+		txStatus bool
+	)
+
+	if len(remote) == 0 {
+		d.log.Println("[TRACE] Remote object list is empty")
+		return nil
+	}
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if err = db.Begin(); err != nil {
+		errmsg = fmt.Sprintf("Failed to initialize database transaction: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", errmsg)
+		return errors.New(errmsg)
+	}
+
+	defer func() {
+		if txStatus {
+			db.Commit() // nolint: errcheck
+		} else {
+			db.Rollback() // nolint: errcheck
+		}
+	}()
+
+	if local, err = db.ReminderGetAll(); err != nil {
+		errmsg = fmt.Sprintf("Failed to load local Reminders from database: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", errmsg)
+		return errors.New(errmsg)
+	}
+
+	idmap = make(map[string]int, len(local))
+
+	for idx, rem := range local {
+		idmap[rem.UUID] = idx
+	}
+
+	for _, remR := range remote {
+		var (
+			lidx int
+			ok   bool
+			remL objects.Reminder
+		)
+
+		if lidx, ok = idmap[remR.UUID]; !ok {
+			// Add Reminder to database
+			if err = db.ReminderAdd(&remR); err != nil {
+				errmsg = fmt.Sprintf("Failed to add Reminder %q (%s) to database: %s",
+					remR.Title,
+					remR.UUID,
+					err.Error())
+				d.log.Printf("[ERROR] %s\n", errmsg)
+				return errors.New(errmsg)
+			}
+		} else if remL = local[lidx]; remR.Changed.After(remL.Changed) {
+			// Update Reminder in local database
+			// This is slightly more tedious, because we need to
+			// check *which fields* we need to update.
+			if remL.Title != remR.Title {
+				if err = db.ReminderSetTitle(&remL, remR.Title); err != nil {
+					errmsg = fmt.Sprintf("Failed to update title on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if remL.Description != remR.Description {
+				if err = db.ReminderSetDescription(&remL, remR.Description); err != nil {
+					errmsg = fmt.Sprintf("Failed to update description on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if !remL.Timestamp.Equal(remR.Timestamp) {
+				if err = db.ReminderSetTimestamp(&remL, remR.Timestamp); err != nil {
+					errmsg = fmt.Sprintf("Failed to update timestamp on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if remL.Finished != remR.Finished {
+				if err = db.ReminderSetFinished(&remL, remR.Finished); err != nil {
+					errmsg = fmt.Sprintf("Failed to update finished-flag on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if err = db.ReminderSetChanged(&remL, remR.Changed); err != nil {
+				errmsg = fmt.Sprintf("Cannot update change stamp on Reminder %d (%q): %s",
+					remL.ID,
+					remL.UUID,
+					err.Error())
+				d.log.Printf("[ERROR] %s\n", errmsg)
+				return errors.New(errmsg)
+			}
+		}
+	}
+
+	txStatus = true
+	return nil
+} // func (d *Daemon) reminderMerge(remote []objects.Reminder) error
+
 func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request) {
 	d.log.Printf("[TRACE] Handle %s from %s\n",
 		r.URL,
@@ -584,14 +812,21 @@ func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request) {
 	d.log.Println("[TRACE] Acquire pLock")
 	d.pLock.RLock()
 	for _, e := range d.peers {
-		var p = objects.Peer{
-			Instance: e.Instance,
-			Hostname: e.HostName,
-			Domain:   e.Domain,
-			Port:     e.Port,
-		}
+		d.log.Printf("[DEBUG] Peer %s - %s, TTL %d, expires %s\n",
+			e.rr.Instance,
+			e.timestamp.Format(common.TimestampFormat),
+			e.rr.TTL,
+			e.timestamp.Add(time.Duration(e.rr.TTL)*time.Second).Format(common.TimestampFormat))
+		if !e.isExpired() {
+			var p = objects.Peer{
+				Instance: e.rr.Instance,
+				Hostname: e.rr.HostName,
+				Domain:   e.rr.Domain,
+				Port:     e.rr.Port,
+			}
 
-		peers = append(peers, p)
+			peers = append(peers, p)
+		}
 	}
 	d.pLock.RUnlock()
 	d.log.Println("[TRACE] Released pLock")

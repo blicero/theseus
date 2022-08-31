@@ -2,17 +2,20 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-29 20:32:44 krylon>
+// Time-stamp: <2022-08-31 23:01:40 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
 package backend
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -488,3 +491,51 @@ func (d *Daemon) dbCheck() error {
 
 	return nil
 } // func (d *Daemon) dbCheck() error
+
+// nolint: unused
+func (d *Daemon) synchronize(peer *objects.Peer) error {
+	var (
+		err    error
+		addr   url.URL
+		uri    string
+		buf    bytes.Buffer
+		client http.Client
+		res    *http.Response
+		// db     *database.Database
+	)
+
+	addr = url.URL{
+		Scheme: "http",
+		Host: fmt.Sprintf("%s.%s:%d",
+			peer.Hostname,
+			peer.Domain,
+			peer.Port),
+		Path: "/sync/pull",
+	}
+
+	uri = addr.String()
+
+	if res, err = client.Get(uri); err != nil {
+		d.log.Printf("[ERROR] Cannot get Reminder list from Peer %s: %s\n",
+			peer,
+			err.Error())
+		return err
+	}
+
+	defer res.Body.Close()
+	if _, err = io.Copy(&buf, res.Body); err != nil {
+		d.log.Printf("[ERROR] Cannot read HTTP response body from %s: %s\n",
+			peer.Hostname,
+			err.Error())
+		return err
+	}
+
+	if res.StatusCode != 200 {
+		d.log.Printf("[ERROR] HTTP request to %s failed: %s\n%s\n",
+			peer.Hostname,
+			res.Status,
+			buf.Bytes())
+	}
+
+	return nil
+} // func (d *Daemon) synchronize(peer string) error
