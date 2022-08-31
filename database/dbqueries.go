@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 20:04:27 krylon>
+// Time-stamp: <2022-08-31 21:19:26 krylon>
 
 package database
 
@@ -62,9 +62,29 @@ SELECT
 FROM reminder
 WHERE id = ?
 `,
-	query.ReminderSetTitle:       "UPDATE reminder SET title = ?, changed = ? WHERE id = ?",
-	query.ReminderSetDescription: "UPDATE reminder SET description = ?, changed = ? WHERE id = ?",
-	query.ReminderSetTimestamp:   "UPDATE reminder SET due = ?, changed = ? WHERE id = ?",
-	query.ReminderSetFinished:    "UPDATE reminder SET finished = ?, changed = ? WHERE id = ?",
-	query.ReminderReactivate:     "UPDATE reminder SET finished = 0, due = ?, changed = ? WHERE id = ?",
+	query.ReminderSetTitle: `
+UPDATE reminder
+SET title = ?, changed = ?
+WHERE id = ?`,
+	query.ReminderSetDescription: `
+UPDATE reminder
+SET description = ?, changed = ?
+WHERE id = ?`,
+	query.ReminderSetTimestamp: `
+UPDATE reminder
+SET due = ?, changed = ?
+WHERE id = ?`,
+	query.ReminderSetFinished: `
+UPDATE reminder
+SET finished = ?, changed = ?
+WHERE id = ?`,
+	query.ReminderReactivate: `
+UPDATE reminder
+SET finished = 0, due = ?, changed = ?
+WHERE id = ?`,
+	query.ReminderSetChanged: `
+UPDATE reminder
+SET changed = ?
+WHERE id = ?
+`,
 }
