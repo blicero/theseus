@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-08-31 23:03:40 krylon>
+# Time-stamp: <2022-09-03 21:10:34 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -9,42 +9,42 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-08-31 Mi 23:03]
-  | Headline                                     | Time       |            |         |          |      |
-  |----------------------------------------------+------------+------------+---------+----------+------|
-  | *Total time*                                 | *6d 17:41* |            |         |          |      |
-  |----------------------------------------------+------------+------------+---------+----------+------|
-  | *Theseus [6/11]*                             | *6d 17:41* |            |         |          |      |
-  | \_  /Components [6/11]/                      |            | /6d 12:45/ |         |          |      |
-  | \_    Data types                             |            |            |    1:04 |          |      |
-  | \_    Database                               |            |            |    2:38 |          |      |
-  | \_    Networking [2/3]                       |            |            |   22:36 |          |      |
-  | \_      mDNS [1/1]                           |            |            |         |    14:08 |      |
-  | \_        Cache invalidation                 |            |            |         |          | 3:49 |
-  | \_      Synchronization [0/0]                |            |            |         |     8:28 |      |
-  | \_    Backend [3/3]                          |            |            |   23:54 |          |      |
-  | \_      Testing                              |            |            |         |     0:35 |      |
-  | \_      Notifications                        |            |            |         |    12:12 |      |
-  | \_      HTTP API                             |            |            |         |     5:30 |      |
-  | \_    Frontend [1/3]                         |            |            | 2d 8:04 |          |      |
-  | \_      Filtering and Sorting                |            |            |         |     7:43 |      |
-  | \_      Re-Arm a Reminder                    |            |            |         |     3:59 |      |
-  | \_    Other sources [0/2]                    |            |            | 2d 2:29 |          |      |
-  | \_      Framework?                           |            |            |         |     3:11 |      |
-  | \_      logreader                            |            |            |         | 1d 23:18 |      |
-  | \_  /Cleanup/                                |            | /1:28/     |         |          |      |
-  | \_  /Testing [0/0]/                          |            | /1:30/     |         |          |      |
-  | \_    Database                               |            |            |    1:30 |          |      |
-  | \_  /Bugs/                                   |            | /1:58/     |         |          |      |
-  | \_    Update timestamp when re-activating... |            |            |    1:16 |          |      |
-  | \_    Deleting Reminders                     |            |            |    0:42 |          |      |
+  #+CAPTION: Clock summary at [2022-09-03 Sa 21:10]
+  | Headline                                     | Time      |            |         |          |      |
+  |----------------------------------------------+-----------+------------+---------+----------+------|
+  | *Total time*                                 | *7d 2:15* |            |         |          |      |
+  |----------------------------------------------+-----------+------------+---------+----------+------|
+  | *Theseus [6/11]*                             | *7d 2:15* |            |         |          |      |
+  | \_  /Components [7/11]/                      |           | /6d 21:19/ |         |          |      |
+  | \_    Data types                             |           |            |    1:04 |          |      |
+  | \_    Database                               |           |            |    2:38 |          |      |
+  | \_    Networking [3/3]                       |           |            | 1d 7:10 |          |      |
+  | \_      mDNS [1/1]                           |           |            |         |    14:08 |      |
+  | \_        Cache invalidation                 |           |            |         |          | 3:49 |
+  | \_      Synchronization [0/0]                |           |            |         |    17:02 |      |
+  | \_    Backend [3/3]                          |           |            |   23:54 |          |      |
+  | \_      Testing                              |           |            |         |     0:35 |      |
+  | \_      Notifications                        |           |            |         |    12:12 |      |
+  | \_      HTTP API                             |           |            |         |     5:30 |      |
+  | \_    Frontend [1/3]                         |           |            | 2d 8:04 |          |      |
+  | \_      Filtering and Sorting                |           |            |         |     7:43 |      |
+  | \_      Re-Arm a Reminder                    |           |            |         |     3:59 |      |
+  | \_    Other sources [0/2]                    |           |            | 2d 2:29 |          |      |
+  | \_      Framework?                           |           |            |         |     3:11 |      |
+  | \_      logreader                            |           |            |         | 1d 23:18 |      |
+  | \_  /Cleanup/                                |           | /1:28/     |         |          |      |
+  | \_  /Testing [0/0]/                          |           | /1:30/     |         |          |      |
+  | \_    Database                               |           |            |    1:30 |          |      |
+  | \_  /Bugs/                                   |           | /1:58/     |         |          |      |
+  | \_    Update timestamp when re-activating... |           |            |    1:16 |          |      |
+  | \_    Deleting Reminders                     |           |            |    0:42 |          |      |
   #+END:
 * Theseus [6/11]
   :PROPERTIES:
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
   :END:
-** Components [6/11]
+** Components [7/11]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
@@ -66,7 +66,7 @@
     Go, the cgo overhead would go away.
 
     But after taking a brief look at my fyne experiment, I'll stick with Gtk.
-*** Networking [2/3]                                     :feature:meditation:
+*** Networking [3/3]                                     :feature:meditation:
     I could make an attempt to build this as a distributed application so I
     can sync reminders between machines. I think that's a nice idea.
     A-and while we're at it, I would like using zeroconf/mDNS to have
@@ -119,8 +119,12 @@
       Interwebs and download the zeroconf package, hoping it is not a dead
       end. -- PS: It was a small download, less than 1MiB including
       dependencies, and it works reasonably well.
-**** TODO Synchronization [0/0]
+**** DONE Synchronization [0/0]
+     CLOSED: [2022-09-03 Sa 21:10]
      :LOGBOOK:
+     CLOCK: [2022-09-03 Sa 19:37]--[2022-09-03 Sa 21:10] =>  1:33
+     CLOCK: [2022-09-02 Fr 16:33]--[2022-09-02 Fr 20:37] =>  4:04
+     CLOCK: [2022-09-01 Do 18:31]--[2022-09-01 Do 21:28] =>  2:57
      CLOCK: [2022-08-31 Mi 19:29]--[2022-08-31 Mi 23:02] =>  3:33
      CLOCK: [2022-08-30 Di 22:21]--[2022-08-30 Di 23:12] =>  0:51
      CLOCK: [2022-08-30 Di 19:57]--[2022-08-30 Di 21:48] =>  1:51
