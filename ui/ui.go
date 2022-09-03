@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-26 20:43:48 krylon>
+// Time-stamp: <2022-09-02 20:45:35 krylon>
 
 package ui
 
@@ -118,6 +118,7 @@ type GUI struct {
 	fMenu        *gtk.Menu // nolint: unused,structcheck
 	web          http.Client
 	reminders    map[int64]objects.Reminder
+	peers        map[string]objects.Peer
 	hideFinished bool
 }
 
@@ -129,6 +130,7 @@ func Create(srv string) (*GUI, error) {
 		win = &GUI{
 			srv:       srv,
 			reminders: make(map[int64]objects.Reminder),
+			peers:     make(map[string]objects.Peer),
 		}
 	)
 
@@ -255,6 +257,7 @@ func (g *GUI) initMenu() error {
 		srvItem, quitItem, addItem, editItem *gtk.MenuItem
 		fItem, rItem, rrItem, delItem        *gtk.MenuItem
 		hideFinItem                          *gtk.CheckMenuItem
+		syncItem                             *gtk.MenuItem
 	)
 
 	if fMenu, err = gtk.MenuNew(); err != nil {
@@ -301,6 +304,9 @@ func (g *GUI) initMenu() error {
 		g.log.Printf("[ERROR] Cannot create menu item HIDE_FINISHED: %s\n",
 			err.Error())
 		return err
+	} else if syncItem, err = gtk.MenuItemNewWithMnemonic("S_ynchronize"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item SYNC: %s\n",
+			err.Error())
 	}
 
 	quitItem.Connect("activate", gtk.MainQuit)
@@ -310,6 +316,7 @@ func (g *GUI) initMenu() error {
 	rrItem.Connect("activate", g.reminderReactivate)
 	delItem.Connect("activate", g.reminderDelete)
 	hideFinItem.Connect("activate", g.reminderHideFinished)
+	syncItem.Connect("activate", g.synchronize)
 
 	fMenu.Append(srvItem)
 	fMenu.Append(quitItem)
@@ -317,6 +324,7 @@ func (g *GUI) initMenu() error {
 	rMenu.Append(editItem)
 	rMenu.Append(rrItem)
 	rMenu.Append(delItem)
+	rMenu.Append(syncItem)
 	rMenu.Append(hideFinItem)
 
 	g.menuBar.Append(fItem)
@@ -545,12 +553,18 @@ func (g *GUI) fetchPeers() bool {
 
 	g.log.Printf("[TRACE] Received %d peers from Backend\n", len(peers))
 
+	for k := range g.peers {
+		delete(g.peers, k)
+	}
+
 	for i, p := range peers {
+		var spec = p.Spec()
 		g.log.Printf("[DEBUG] Got Peer %d/%d: %s\n",
 			i+1,
 			len(peers),
-			&p)
+			spec)
 		g.pushMsg(p.String())
+		g.peers[spec] = p
 	}
 
 	return true
@@ -1133,11 +1147,9 @@ BEGIN:
 		g.log.Printf("[ERROR] Backend responds with status %s\n",
 			reply.Status)
 		return
-	} else if reply.Close {
-		g.log.Printf("[DEBUG] I will close the Body I/O object for %s\n",
-			reply.Request.URL)
-		defer reply.Body.Close() // nolint: errcheck
 	}
+
+	defer reply.Body.Close() // nolint: errcheck
 
 	if _, err = io.Copy(&buf, reply.Body); err != nil {
 		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
@@ -1451,3 +1463,165 @@ func (g *GUI) reminderCmpFunc(model *gtk.TreeModel, a, b *gtk.TreeIter) int {
 
 	return strings.Compare(r1.Title, r2.Title)
 } // func (g *GUI) reminderCmpFunc(a, b *gtk.TreeIter) int
+
+func (g *GUI) synchronize() {
+	var (
+		err   error
+		dlg   *gtk.Dialog
+		grid  *gtk.Grid
+		dbox  *gtk.Box
+		combo *gtk.ComboBoxText
+		lbl   *gtk.Label
+		msg   string
+	)
+
+	const lblMsg = "Choose peer to synchronize with"
+
+	// Maybe we should allow for manual input in case DNS-SD
+	// does not work?
+	if len(g.peers) == 0 {
+		g.displayMsg("There are no peers available, currently.")
+		return
+	}
+
+	if dlg, err = gtk.DialogNewWithButtons(
+		"Synchronize",
+		g.win,
+		gtk.DIALOG_MODAL,
+		[]any{
+			"_Cancel",
+			gtk.RESPONSE_CANCEL,
+			"_OK",
+			gtk.RESPONSE_OK,
+		},
+	); err != nil {
+
+		msg = fmt.Sprintf("Cannot create Sync dialog: %s\n",
+			err.Error())
+		g.log.Printf("[ERROR] %s\n", msg)
+		g.pushMsg(msg)
+		return
+	}
+
+	defer dlg.Close()
+
+	if _, err = dlg.AddButton("_OK", gtk.RESPONSE_OK); err != nil {
+		g.log.Printf("[ERROR] Cannot add OK button to dialog: %s\n",
+			err.Error())
+		return
+	} else if grid, err = gtk.GridNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create gtk.Grid: %s\n",
+			err.Error())
+		return
+	} else if lbl, err = gtk.LabelNew(lblMsg); err != nil {
+		g.log.Printf("[ERROR] Cannot create Label: %s\n",
+			err.Error())
+		return
+	} else if combo, err = gtk.ComboBoxTextNew(); err != nil {
+		g.log.Printf("[ERROR] Cannot create ComboBox: %s\n",
+			err.Error())
+	} else if dbox, err = dlg.GetContentArea(); err != nil {
+		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog: %s\n",
+			err.Error())
+	}
+
+	for k := range g.peers {
+		combo.AppendText(k)
+	}
+
+	grid.InsertColumn(0)
+	grid.InsertRow(0)
+	grid.InsertRow(1)
+
+	grid.Attach(lbl, 0, 0, 1, 1)
+	grid.Attach(combo, 0, 1, 1, 1)
+
+	dbox.PackStart(grid, true, true, 0)
+	dlg.ShowAll()
+
+	var res = dlg.Run()
+
+	switch res {
+	case gtk.RESPONSE_NONE:
+		fallthrough
+	case gtk.RESPONSE_DELETE_EVENT:
+		fallthrough
+	case gtk.RESPONSE_CLOSE:
+		fallthrough
+	case gtk.RESPONSE_CANCEL:
+		g.log.Println("[DEBUG] User changed their mind about adding a Program. Fine with me.")
+		return
+	case gtk.RESPONSE_OK:
+		// It's go-time!
+	default:
+		g.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
+			res)
+		return
+	}
+
+	var (
+		ok       bool
+		peer     objects.Peer
+		reply    *http.Response
+		response objects.Response
+		addr     string
+		buf      bytes.Buffer
+		payload  = make(url.Values)
+		txt      = combo.GetActiveText()
+	)
+
+	if peer, ok = g.peers[txt]; !ok {
+		msg = fmt.Sprintf("Peer %s was not found in cache",
+			txt)
+		g.pushMsg(msg)
+		g.displayMsg(msg)
+		g.log.Printf("[CANTHAPPEN] %s\n",
+			msg)
+		return
+	}
+
+	addr = fmt.Sprintf("http://%s%s",
+		g.srv,
+		"/sync/start")
+
+	payload["host"] = []string{peer.Spec()}
+
+	if reply, err = g.web.PostForm(addr, payload); err != nil {
+		g.log.Printf("[ERROR] Failed to tell Server to sync with %s: %s\n",
+			peer.Spec(),
+			err.Error())
+		return
+	} else if reply.StatusCode != 200 {
+		g.log.Printf("[ERROR] Backend responds with status %s\n",
+			reply.Status)
+		return
+	}
+
+	defer reply.Body.Close() // nolint: errcheck
+
+	if _, err = io.Copy(&buf, reply.Body); err != nil {
+		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
+			err.Error())
+		return
+	} else if err = ffjson.Unmarshal(buf.Bytes(), &response); err != nil {
+		g.log.Printf("[ERROR] Cannot de-serialize Response from JSON: %s\n",
+			err.Error())
+		return
+	}
+
+	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
+		response)
+
+	if response.Status {
+		msg = fmt.Sprintf("Data was synchronized with %s successfully",
+			peer.Hostname)
+	} else {
+		msg = fmt.Sprintf("Synchronization with %s failed: %s",
+			peer.Hostname,
+			response.Message)
+	}
+
+	g.displayMsg(msg)
+	g.pushMsg(msg)
+	g.log.Printf("[INFO] %s\n", msg)
+} // func (g *GUI) synchronize()

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-31 23:01:40 krylon>
+// Time-stamp: <2022-09-03 20:57:37 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -11,6 +11,7 @@ package backend
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -28,6 +29,7 @@ import (
 	"github.com/godbus/dbus/v5"
 	"github.com/gorilla/mux"
 	"github.com/grandcat/zeroconf"
+	"github.com/pquerna/ffjson/ffjson"
 )
 
 const (
@@ -44,6 +46,15 @@ type service struct {
 	rr        *zeroconf.ServiceEntry
 	timestamp time.Time
 }
+
+func (s *service) mkPeer() objects.Peer {
+	return objects.Peer{
+		Instance: s.rr.Instance,
+		Hostname: s.rr.HostName,
+		Domain:   s.rr.Domain,
+		Port:     s.rr.Port,
+	}
+} // func (s *service) mkPeer() objects.Peer
 
 func mkService(rr *zeroconf.ServiceEntry) service {
 	return service{
@@ -492,23 +503,164 @@ func (d *Daemon) dbCheck() error {
 	return nil
 } // func (d *Daemon) dbCheck() error
 
-// nolint: unused
+func (d *Daemon) reminderMerge(remote []objects.Reminder) error {
+	var (
+		err      error
+		local    []objects.Reminder
+		db       *database.Database
+		idmap    map[string]int
+		errmsg   string
+		txStatus bool
+	)
+
+	if len(remote) == 0 {
+		d.log.Println("[TRACE] Remote object list is empty")
+		return nil
+	}
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if err = db.Begin(); err != nil {
+		errmsg = fmt.Sprintf("Failed to initialize database transaction: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", errmsg)
+		return errors.New(errmsg)
+	}
+
+	defer func() {
+		if txStatus {
+			db.Commit() // nolint: errcheck
+		} else {
+			db.Rollback() // nolint: errcheck
+		}
+	}()
+
+	if local, err = db.ReminderGetAll(); err != nil {
+		errmsg = fmt.Sprintf("Failed to load local Reminders from database: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", errmsg)
+		return errors.New(errmsg)
+	}
+
+	idmap = make(map[string]int, len(local))
+
+	for idx, rem := range local {
+		idmap[rem.UUID] = idx
+	}
+
+	for _, remR := range remote {
+		var (
+			lidx  int
+			ok    bool
+			remL  objects.Reminder
+			ctime = remR.Changed
+		)
+
+		if lidx, ok = idmap[remR.UUID]; !ok {
+			// Add Reminder to database
+			if err = db.ReminderAdd(&remR); err != nil {
+				errmsg = fmt.Sprintf("Failed to add Reminder %q (%s) to database: %s",
+					remR.Title,
+					remR.UUID,
+					err.Error())
+				d.log.Printf("[ERROR] %s\n", errmsg)
+				return errors.New(errmsg)
+			} else if err = db.ReminderSetFinished(&remR, remR.Finished); err != nil {
+				errmsg = fmt.Sprintf("Failed to set finished-flag on new Reminder %q (%s): %s",
+					remR.Title,
+					remR.UUID,
+					err.Error())
+				d.log.Printf("[ERROR] %s\n", errmsg)
+				return errors.New(errmsg)
+			} else if err = db.ReminderSetChanged(&remR, ctime); err != nil {
+				errmsg = fmt.Sprintf("Failed to set CTime on Reminder %q (%s): %s",
+					remR.Title,
+					remR.UUID,
+					err.Error())
+				d.log.Printf("[ERROR] %s\n", errmsg)
+				return errors.New(errmsg)
+			}
+		} else if remL = local[lidx]; remR.Changed.After(remL.Changed) {
+			// Update Reminder in local database
+			// This is slightly more tedious, because we need to
+			// check *which fields* we need to update.
+			if remL.Title != remR.Title {
+				if err = db.ReminderSetTitle(&remL, remR.Title); err != nil {
+					errmsg = fmt.Sprintf("Failed to update title on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if remL.Description != remR.Description {
+				if err = db.ReminderSetDescription(&remL, remR.Description); err != nil {
+					errmsg = fmt.Sprintf("Failed to update description on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if !remL.Timestamp.Equal(remR.Timestamp) {
+				if err = db.ReminderSetTimestamp(&remL, remR.Timestamp); err != nil {
+					errmsg = fmt.Sprintf("Failed to update timestamp on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if remL.Finished != remR.Finished {
+				if err = db.ReminderSetFinished(&remL, remR.Finished); err != nil {
+					errmsg = fmt.Sprintf("Failed to update finished-flag on Reminder %d (%q): %s",
+						remL.ID,
+						remL.UUID,
+						err.Error())
+					d.log.Printf("[ERROR] %s\n", errmsg)
+					return errors.New(errmsg)
+				}
+			}
+
+			if err = db.ReminderSetChanged(&remL, ctime); err != nil {
+				errmsg = fmt.Sprintf("Cannot update change stamp on Reminder %d (%q): %s",
+					remL.ID,
+					remL.UUID,
+					err.Error())
+				d.log.Printf("[ERROR] %s\n", errmsg)
+				return errors.New(errmsg)
+			}
+		}
+	}
+
+	txStatus = true
+	return nil
+} // func (d *Daemon) reminderMerge(remote []objects.Reminder) error
+
 func (d *Daemon) synchronize(peer *objects.Peer) error {
 	var (
-		err    error
-		addr   url.URL
-		uri    string
-		buf    bytes.Buffer
-		client http.Client
-		res    *http.Response
-		// db     *database.Database
+		err                  error
+		addr                 url.URL
+		uri                  string
+		buf                  bytes.Buffer
+		client               http.Client
+		res                  *http.Response
+		answer               objects.Response
+		remote, local, delta []objects.Reminder
+		db                   *database.Database
 	)
 
 	addr = url.URL{
 		Scheme: "http",
-		Host: fmt.Sprintf("%s.%s:%d",
+		Host: fmt.Sprintf("%s:%d",
 			peer.Hostname,
-			peer.Domain,
 			peer.Port),
 		Path: "/sync/pull",
 	}
@@ -535,6 +687,109 @@ func (d *Daemon) synchronize(peer *objects.Peer) error {
 			peer.Hostname,
 			res.Status,
 			buf.Bytes())
+
+		if err = ffjson.Unmarshal(buf.Bytes(), &answer); err != nil {
+			d.log.Printf("[ERROR] Failed to decode Response structure from %s: %s\n",
+				peer.Hostname,
+				err.Error())
+			return err
+		}
+
+		d.log.Printf("[ERROR] Response from %s: %#v\n",
+			peer.Hostname,
+			answer)
+		return errors.New(answer.Message)
+	} else if err = ffjson.Unmarshal(buf.Bytes(), &remote); err != nil {
+		d.log.Printf("[ERROR] Cannot decode response from %s: %s\n%s\n",
+			peer.Hostname,
+			err.Error(),
+			buf.Bytes())
+		return err
+	} else if err = d.reminderMerge(remote); err != nil {
+		d.log.Printf("[ERROR] Failed to merge Reminder items from %s into local database: %s\n",
+			peer.Hostname,
+			err.Error())
+		return err
+	}
+
+	var idmap = make(map[string]int, len(remote))
+
+	for idx, val := range remote {
+		idmap[val.UUID] = idx
+	}
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if local, err = db.ReminderGetAll(); err != nil {
+		d.log.Printf("[ERROR] Cannot get Reminders from database: %s\n",
+			err.Error())
+		return err
+	}
+
+	delta = make([]objects.Reminder, 0)
+
+	for _, l := range local {
+		var (
+			idx int
+			ok  bool
+			r   objects.Reminder
+		)
+
+		if idx, ok = idmap[l.UUID]; !ok {
+			delta = append(delta, l)
+		} else if r = remote[idx]; l.IsNewer(&r) {
+			delta = append(delta, l)
+		}
+	}
+
+	if len(delta) == 0 {
+		return nil
+	}
+
+	var j []byte
+
+	if j, err = ffjson.Marshal(delta); err != nil {
+		d.log.Printf("[ERROR] Cannot serialize Reminders to send to remote peer: %s\n",
+			err.Error())
+		return err
+	}
+
+	defer ffjson.Pool(j)
+
+	var body = bytes.NewReader(j)
+
+	addr.Path = "/sync/push"
+	uri = addr.String()
+
+	if res, err = client.Post(uri, "application/json", body); err != nil {
+		d.log.Printf("[ERROR] Cannot get Reminder list from Peer %s: %s\n",
+			peer,
+			err.Error())
+		return err
+	}
+
+	buf.Reset()
+
+	defer res.Body.Close()
+	if _, err = io.Copy(&buf, res.Body); err != nil {
+		d.log.Printf("[ERROR] Cannot read HTTP response body from %s: %s\n",
+			peer.Hostname,
+			err.Error())
+		return err
+	}
+
+	if err = ffjson.Unmarshal(buf.Bytes(), &answer); err != nil {
+		d.log.Printf("[ERROR] Cannot parse response from %s: %s\n%s\n",
+			peer.Hostname,
+			err.Error(),
+			buf.Bytes())
+		return err
+	} else if !answer.Status {
+		d.log.Printf("[ERROR] Peer %s signalled a failure: %s\n",
+			peer.Hostname,
+			answer.Message)
+		return errors.New(answer.Message)
 	}
 
 	return nil

@@ -2,13 +2,12 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-31 21:22:47 krylon>
+// Time-stamp: <2022-09-02 17:09:41 krylon>
 
 package backend
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,6 +33,7 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/peer/all", d.handlePeerListGet)
 	d.router.HandleFunc("/sync/pull", d.handleReminderSyncPull)
 	d.router.HandleFunc("/sync/push", d.handleReminderSyncPush)
+	d.router.HandleFunc("/sync/start", d.handleReminderSyncStart)
 
 	return nil
 } // func (d *Daemon) initWebHandlers() error
@@ -670,131 +670,54 @@ func (d *Daemon) handleReminderSyncPush(w http.ResponseWriter, r *http.Request) 
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) handleReminderSyncPush(w http.ResponseWriter, r *http.Request)
 
-func (d *Daemon) reminderMerge(remote []objects.Reminder) error {
+func (d *Daemon) handleReminderSyncStart(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
 	var (
-		err      error
-		local    []objects.Reminder
-		db       *database.Database
-		idmap    map[string]int
-		errmsg   string
-		txStatus bool
+		err  error
+		name string
+		peer objects.Peer
+		svc  service
+		ok   bool
+		res  = objects.Response{ID: d.getID()}
 	)
 
-	if len(remote) == 0 {
-		d.log.Println("[TRACE] Remote object list is empty")
-		return nil
-	}
-
-	db = d.pool.Get()
-	defer d.pool.Put(db)
-
-	if err = db.Begin(); err != nil {
-		errmsg = fmt.Sprintf("Failed to initialize database transaction: %s",
+	if err = r.ParseForm(); err != nil {
+		res.Message = fmt.Sprintf("Cannot parse form data: %s",
 			err.Error())
-		d.log.Printf("[ERROR] %s\n", errmsg)
-		return errors.New(errmsg)
+		d.log.Printf("[ERROR] %s\n", res.Message)
+		goto SEND_RESPONSE
 	}
 
-	defer func() {
-		if txStatus {
-			db.Commit() // nolint: errcheck
-		} else {
-			db.Rollback() // nolint: errcheck
-		}
-	}()
+	name = r.FormValue("host")
 
-	if local, err = db.ReminderGetAll(); err != nil {
-		errmsg = fmt.Sprintf("Failed to load local Reminders from database: %s",
+	d.pLock.RLock()
+	if svc, ok = d.peers[name]; !ok {
+		d.pLock.RUnlock()
+		res.Message = fmt.Sprintf("Could not find Peer %s in cache",
+			name)
+		d.log.Printf("[ERROR] %s\n", res.Message)
+		goto SEND_RESPONSE
+	}
+
+	d.pLock.RUnlock()
+	peer = svc.mkPeer()
+
+	if err = d.synchronize(&peer); err != nil {
+		res.Message = fmt.Sprintf("Error synchronizing with Peer %s: %s",
+			name,
 			err.Error())
-		d.log.Printf("[ERROR] %s\n", errmsg)
-		return errors.New(errmsg)
+		d.log.Printf("[ERROR] %s\n", res.Message)
+	} else {
+		res.Status = true
+		res.Message = "Success"
 	}
 
-	idmap = make(map[string]int, len(local))
-
-	for idx, rem := range local {
-		idmap[rem.UUID] = idx
-	}
-
-	for _, remR := range remote {
-		var (
-			lidx int
-			ok   bool
-			remL objects.Reminder
-		)
-
-		if lidx, ok = idmap[remR.UUID]; !ok {
-			// Add Reminder to database
-			if err = db.ReminderAdd(&remR); err != nil {
-				errmsg = fmt.Sprintf("Failed to add Reminder %q (%s) to database: %s",
-					remR.Title,
-					remR.UUID,
-					err.Error())
-				d.log.Printf("[ERROR] %s\n", errmsg)
-				return errors.New(errmsg)
-			}
-		} else if remL = local[lidx]; remR.Changed.After(remL.Changed) {
-			// Update Reminder in local database
-			// This is slightly more tedious, because we need to
-			// check *which fields* we need to update.
-			if remL.Title != remR.Title {
-				if err = db.ReminderSetTitle(&remL, remR.Title); err != nil {
-					errmsg = fmt.Sprintf("Failed to update title on Reminder %d (%q): %s",
-						remL.ID,
-						remL.UUID,
-						err.Error())
-					d.log.Printf("[ERROR] %s\n", errmsg)
-					return errors.New(errmsg)
-				}
-			}
-
-			if remL.Description != remR.Description {
-				if err = db.ReminderSetDescription(&remL, remR.Description); err != nil {
-					errmsg = fmt.Sprintf("Failed to update description on Reminder %d (%q): %s",
-						remL.ID,
-						remL.UUID,
-						err.Error())
-					d.log.Printf("[ERROR] %s\n", errmsg)
-					return errors.New(errmsg)
-				}
-			}
-
-			if !remL.Timestamp.Equal(remR.Timestamp) {
-				if err = db.ReminderSetTimestamp(&remL, remR.Timestamp); err != nil {
-					errmsg = fmt.Sprintf("Failed to update timestamp on Reminder %d (%q): %s",
-						remL.ID,
-						remL.UUID,
-						err.Error())
-					d.log.Printf("[ERROR] %s\n", errmsg)
-					return errors.New(errmsg)
-				}
-			}
-
-			if remL.Finished != remR.Finished {
-				if err = db.ReminderSetFinished(&remL, remR.Finished); err != nil {
-					errmsg = fmt.Sprintf("Failed to update finished-flag on Reminder %d (%q): %s",
-						remL.ID,
-						remL.UUID,
-						err.Error())
-					d.log.Printf("[ERROR] %s\n", errmsg)
-					return errors.New(errmsg)
-				}
-			}
-
-			if err = db.ReminderSetChanged(&remL, remR.Changed); err != nil {
-				errmsg = fmt.Sprintf("Cannot update change stamp on Reminder %d (%q): %s",
-					remL.ID,
-					remL.UUID,
-					err.Error())
-				d.log.Printf("[ERROR] %s\n", errmsg)
-				return errors.New(errmsg)
-			}
-		}
-	}
-
-	txStatus = true
-	return nil
-} // func (d *Daemon) reminderMerge(remote []objects.Reminder) error
+SEND_RESPONSE:
+	d.sendResponseJSON(w, &res)
+} // func (d *Daemon) handleReminderSyncStart(w http.ResponseWriter, r *http.Request)
 
 func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request) {
 	d.log.Printf("[TRACE] Handle %s from %s\n",
@@ -809,7 +732,7 @@ func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request) {
 
 	peers = make([]objects.Peer, 0)
 
-	d.log.Println("[TRACE] Acquire pLock")
+	// d.log.Println("[TRACE] Acquire pLock")
 	d.pLock.RLock()
 	for _, e := range d.peers {
 		d.log.Printf("[DEBUG] Peer %s - %s, TTL %d, expires %s\n",
@@ -829,7 +752,7 @@ func (d *Daemon) handlePeerListGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	d.pLock.RUnlock()
-	d.log.Println("[TRACE] Released pLock")
+	// d.log.Println("[TRACE] Released pLock")
 
 	if buf, err = ffjson.Marshal(peers); err != nil {
 		d.log.Printf("[ERROR] Cannot serialize peer list of %d members: %s\n",

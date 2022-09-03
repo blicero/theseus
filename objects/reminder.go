@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 20:05:13 krylon>
+// Time-stamp: <2022-09-01 18:48:43 krylon>
 
 package objects
 
@@ -41,3 +41,7 @@ func (r *Reminder) Payload() (string, string) {
 func (r *Reminder) UniqueID() string {
 	return r.UUID
 } // func (r *Reminder) UniqueID() string
+
+func (r *Reminder) IsNewer(other *Reminder) bool {
+	return r.Changed.After(other.Changed)
+} // func (r *Reminder) IsNewer(other *Reminder) bool
