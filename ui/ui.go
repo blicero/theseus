@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-05 19:49:08 krylon>
+// Time-stamp: <2022-09-05 21:38:33 krylon>
 
 package ui
 
@@ -15,11 +15,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/blicero/krylib"
+	"github.com/blicero/theseus/backend"
 	"github.com/blicero/theseus/common"
 	"github.com/blicero/theseus/logdomain"
 	"github.com/blicero/theseus/objects"
@@ -35,6 +38,7 @@ var icon []byte
 const (
 	defaultBufSize        = 65536 // 64 KiB
 	msgID                 = 666
+	maxSpawnAttempts      = 3
 	uriGetAll             = "/reminder/all"
 	uriReminderAdd        = "/reminder/add"
 	uriReminderDelete     = "/reminder/%d/delete"
@@ -112,6 +116,7 @@ type GUI struct {
 	srv          string
 	log          *log.Logger
 	lock         sync.RWMutex // nolint: unused,structcheck
+	spawnCnt     int
 	win          *gtk.Window
 	mainBox      *gtk.Box
 	store        *gtk.ListStore
@@ -373,12 +378,16 @@ func (g *GUI) initTree() error {
 	return nil
 } // func (g *GUI) initializeTree() error
 
-func (g *GUI) fetchReminders() bool {
+func (g *GUI) fetchReminders() (repeat bool) {
 	var (
 		err         error
 		rawURL, msg string
 		res         *http.Response
 	)
+
+	defer func() {
+		repeat = true
+	}()
 
 	krylib.Trace()
 
@@ -394,9 +403,55 @@ func (g *GUI) fetchReminders() bool {
 		g.pushMsg(msg)
 		return true
 	} else if res, err = g.web.Get(rawURL); err != nil {
-		g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
-			rawURL,
-			err.Error())
+		if strings.Contains(err.Error(), "connection refused") {
+			g.log.Printf("[INFO] It would appear as if the backend is not currently running, maybe I should start it? - %s\n",
+				err.Error())
+
+			g.lock.Lock()
+			defer g.lock.Unlock()
+
+			if g.spawnCnt >= maxSpawnAttempts {
+				return true
+			}
+
+			g.spawnCnt++
+
+			// Maybe, instead of spawning a separate process, we
+			// can start the backend inside our process?
+			// It's not a very elegant solution, but it should
+			// work.
+			var addr = fmt.Sprintf(":%d", common.DefaultPort)
+			var daemon *backend.Daemon
+
+			if daemon, err = backend.Summon(addr); err != nil {
+				g.log.Printf("[ERROR] Failed to start backend: %s\n",
+					err.Error())
+				return true
+
+			}
+
+			go func() {
+				var sigQ = make(chan os.Signal, 1)
+				var ticker = time.NewTicker(time.Second * 2)
+
+				signal.Notify(sigQ, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+
+				for daemon.IsAlive() {
+					select {
+					case sig := <-sigQ:
+						fmt.Printf("Quitting on signal %s\n", sig)
+						return
+					case <-ticker.C:
+						continue
+					}
+				}
+			}()
+		} else {
+			g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
+				rawURL,
+				err.Error())
+
+		}
 
 		return true
 	} else if res.StatusCode != 200 {
