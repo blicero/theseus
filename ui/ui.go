@@ -2,12 +2,13 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-02 20:45:35 krylon>
+// Time-stamp: <2022-09-05 19:49:08 krylon>
 
 package ui
 
 import (
 	"bytes"
+	_ "embed" // for the icon
 	"fmt"
 	"io"
 	"log"
@@ -22,10 +23,14 @@ import (
 	"github.com/blicero/theseus/common"
 	"github.com/blicero/theseus/logdomain"
 	"github.com/blicero/theseus/objects"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/pquerna/ffjson/ffjson"
 )
+
+//go:embed assets/emblem-urgent.png
+var icon []byte
 
 const (
 	defaultBufSize        = 65536 // 64 KiB
@@ -126,8 +131,9 @@ type GUI struct {
 // to display the Window and execute the gtk event loop.
 func Create(srv string) (*GUI, error) {
 	var (
-		err error
-		win = &GUI{
+		err    error
+		pixbuf *gdk.Pixbuf
+		win    = &GUI{
 			srv:       srv,
 			reminders: make(map[int64]objects.Reminder),
 			peers:     make(map[string]objects.Peer),
@@ -227,8 +233,13 @@ func Create(srv string) (*GUI, error) {
 		win.log.Printf("[ERROR] Failed to intialize MenuBar: %s\n",
 			err.Error())
 		return nil, err
+	} else if pixbuf, err = gdk.PixbufNewFromDataOnly(icon); err != nil {
+		win.log.Printf("[ERROR] Cannot set icon: %s\n",
+			err.Error())
+		return nil, err
 	}
 
+	win.win.SetIcon(pixbuf)
 	win.win.ShowAll()
 	win.win.SetSizeRequest(960, 540)
 	win.win.SetTitle(fmt.Sprintf("%s %s",
