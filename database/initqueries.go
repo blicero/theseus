@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-24 19:55:32 krylon>
+// Time-stamp: <2022-09-06 21:52:44 krylon>
 
 package database
 
@@ -24,6 +24,22 @@ CREATE TABLE reminder (
 	"CREATE INDEX reminder_finished_idx ON reminder (finished)",
 	"CREATE INDEX reminder_uuid_idx ON reminder (uuid)",
 	"CREATE INDEX reminder_changed_idx ON reminder (changed)",
+
+	`
+CREATE TABLE recurrence (
+    id		INTEGER PRIMARY KEY,
+    reminder_id INTEGER NOT NULL,
+    offset      INTEGER NOT NULL,
+    recur_type  INTEGER NOT NULL,
+    max_count   INTEGER NOT NULL DEFAULT 0,
+    counter     INTEGER NOT NULL DEFAULT 0,
+    weekdays    INTEGER NOT NULL DEFAULT 0,
+    changed     INTEGER NOT NULL,
+    FOREIGN KEY (reminder_id) REFERENCES reminder (id),
+    CHECK (offset BETWEEN 0 AND 86400),
+    CHECK (counter <= max_count)
+)
+`,
 
 	// 	`
 	// CREATE TABLE recurrence (

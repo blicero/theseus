@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-08-31 23:01:16 krylon>
+// Time-stamp: <2022-09-06 21:54:03 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -1283,6 +1283,8 @@ EXEC_QUERY:
 	return nil
 } // func (db *Database) ReminderReactivate(r *objects.Reminder, t time.Time) error
 
+// ReminderSetChanged sets the Reminder's ctime to a specific point in time,
+// used for synchronization.
 func (db *Database) ReminderSetChanged(r *objects.Reminder, t time.Time) error {
 	const qid query.ID = query.ReminderSetChanged
 	var (
