@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-06 21:41:00 krylon>
+// Time-stamp: <2022-09-07 18:28:43 krylon>
 
 // Package query provides symbolic constants for identifying SQL queries.
 package query
@@ -31,4 +31,6 @@ const (
 	RecurrenceIsMax
 	RecurrenceIncCount
 	RecurrenceHasMax
+	RecurrenceGetForReminder
+	RecurrenceGetByWeekday
 )

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-06 21:51:29 krylon>
+// Time-stamp: <2022-09-09 20:14:37 krylon>
 
 package database
 
@@ -94,16 +94,44 @@ offset,
 recur_type,
 max_count,
 counter,
-weekdays
+weekdays,
+uuid
 )
 VALUES (
- ?, ?, ?, ?, 0, ?
+ ?, ?, ?, ?, 0, ?, ?
 )
 `,
 	query.RecurrenceDelete:    "DELETE FROM recurrence WHERE id = ?",
 	query.RecurrenceSetOffset: "UPDATE recurrence SET offset = ? WHERE id = ?",
 	query.RecurrenceSetMax:    "UPDATE recurrence SET max_count = ? WHERE id = ?",
 	query.RecurrenceIsMax:     "SELECT (counter = max_count) FROM recurrence WHERE id = ?",
-	query.RecurrenceIncCount:  "UPDATE recurrence SET counter = counter + 1 WHERE id = ?",
+	query.RecurrenceIncCount:  "UPDATE recurrence SET counter = counter + 1 WHERE id = ? RETURNING counter",
 	query.RecurrenceHasMax:    "SELECT (max_count > 0) FROM recurrence WHERE id = ?",
+	query.RecurrenceGetForReminder: `
+SELECT
+    id,
+    offset,
+    recur_type,
+    max_count,
+    counter,
+    weekdays,
+    changed,
+    uuid
+FROM recurrence
+WHERE reminder_id = ?
+`,
+	query.RecurrenceGetByWeekday: `
+SELECT
+    id,
+    reminder_id,
+    offset,
+    recur_type,
+    max_count,
+    counter,
+    weekdays,
+    changed,
+    uuid
+FROM recurrence
+WHERE (weekdays & (1 << ?)) <> 0
+`,
 }
