@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-02 17:09:41 krylon>
+// Time-stamp: <2022-09-10 16:16:36 krylon>
 
 package backend
 
@@ -309,17 +309,14 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		r.RemoteAddr)
 
 	var (
-		err                                 error
-		db                                  *database.Database
-		id                                  int64
-		t                                   time.Time
-		idstr, tstr, titleStr, bodyStr, msg string
-		rem                                 *objects.Reminder
-		res                                 = objects.Response{ID: d.getID()}
-		txStatus                            bool
+		err       error
+		db        *database.Database
+		jstr, msg string
+		remR      objects.Reminder
+		remL      *objects.Reminder
+		res       = objects.Response{ID: d.getID()}
+		txStatus  bool
 	)
-
-	vars := mux.Vars(r)
 
 	if err = r.ParseForm(); err != nil {
 		msg = fmt.Sprintf("Cannot parse form data: %s", err.Error())
@@ -328,39 +325,49 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		goto SEND_RESPONSE
 	}
 
-	idstr = vars["id"]
-	tstr = r.FormValue("timestamp")
-	titleStr = r.FormValue("title")
-	bodyStr = r.FormValue("body")
+	// idstr = vars["id"]
+	// tstr = r.FormValue("timestamp")
+	// titleStr = r.FormValue("title")
+	// bodyStr = r.FormValue("body")
+	jstr = r.FormValue("reminder")
+
+	if err = ffjson.Unmarshal([]byte(jstr), &remR); err != nil {
+		msg = fmt.Sprintf("Cannot parse Reminder: %s\n%s",
+			err.Error(),
+			jstr)
+		res.Message = msg
+		d.log.Printf("[ERROR] %s\n", msg)
+		goto SEND_RESPONSE
+	}
 
 	db = d.pool.Get()
 	defer d.pool.Put(db)
 
-	if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
-		msg = fmt.Sprintf("Cannot parse ID %q: %s",
-			idstr,
-			err.Error())
-		d.log.Printf("[ERROR] %s\n", msg)
-		res.Message = msg
-		goto SEND_RESPONSE
-	} else if t, err = time.Parse(time.RFC3339, tstr); err != nil {
-		msg = fmt.Sprintf("Cannot parse timestamp %q: %s",
-			tstr,
-			err.Error())
-		d.log.Printf("[ERROR] %s\n", msg)
-		res.Message = msg
-		goto SEND_RESPONSE
-	}
+	// if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
+	// 	msg = fmt.Sprintf("Cannot parse ID %q: %s",
+	// 		idstr,
+	// 		err.Error())
+	// 	d.log.Printf("[ERROR] %s\n", msg)
+	// 	res.Message = msg
+	// 	goto SEND_RESPONSE
+	// } else if t, err = time.Parse(time.RFC3339, tstr); err != nil {
+	// 	msg = fmt.Sprintf("Cannot parse timestamp %q: %s",
+	// 		tstr,
+	// 		err.Error())
+	// 	d.log.Printf("[ERROR] %s\n", msg)
+	// 	res.Message = msg
+	// 	goto SEND_RESPONSE
+	// }
 
-	if rem, err = db.ReminderGetByID(id); err != nil {
+	if remL, err = db.ReminderGetByID(remR.ID); err != nil {
 		msg = fmt.Sprintf("Failed to look up Reminder #%d: %s",
-			id,
+			remR.ID,
 			err.Error())
 		d.log.Printf("[ERROR] %s\n", msg)
 		res.Message = msg
 		goto SEND_RESPONSE
-	} else if rem == nil {
-		msg = fmt.Sprintf("Could not find Reminder #%d in database", id)
+	} else if remL == nil {
+		msg = fmt.Sprintf("Could not find Reminder #%d in database", remR.ID)
 		d.log.Printf("[DEBUG] %s\n", msg)
 		res.Message = msg
 		goto SEND_RESPONSE
@@ -372,10 +379,10 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		goto SEND_RESPONSE
 	}
 
-	if durAbs(rem.Timestamp.Sub(t)) > time.Minute {
-		if err = db.ReminderSetTimestamp(rem, t); err != nil {
+	if durAbs(remR.Timestamp.Sub(remL.Timestamp)) > time.Minute {
+		if err = db.ReminderSetTimestamp(remL, remR.Timestamp); err != nil {
 			msg = fmt.Sprintf("Error updating timestamp on Reminder %d: %s",
-				rem.ID,
+				remL.ID,
 				err.Error())
 			d.log.Printf("[ERROR] %s\n", msg)
 			res.Message = msg
@@ -383,12 +390,12 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if rem.Title != titleStr {
-		if err = db.ReminderSetTitle(rem, titleStr); err != nil {
+	if remL.Title != remR.Title {
+		if err = db.ReminderSetTitle(remL, remR.Title); err != nil {
 			msg = fmt.Sprintf("Failed to update Title of Reminder %d from %q to %q: %s",
-				rem.ID,
-				rem.Title,
-				titleStr,
+				remL.ID,
+				remL.Title,
+				remR.Title,
 				err.Error())
 			d.log.Printf("[ERROR] %s\n", msg)
 			res.Message = msg
@@ -396,10 +403,10 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if rem.Description != bodyStr {
-		if err = db.ReminderSetDescription(rem, bodyStr); err != nil {
+	if remL.Description != remR.Description {
+		if err = db.ReminderSetDescription(remL, remR.Description); err != nil {
 			msg = fmt.Sprintf("Failed to update Description of Reminder %d: %s",
-				rem.ID,
+				remL.ID,
 				err.Error())
 			d.log.Printf("[ERROR] %s\n", msg)
 			res.Message = msg

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-09 20:07:04 krylon>
+// Time-stamp: <2022-09-10 15:12:15 krylon>
 
 //go:generate stringer -type=Recurrence
 
@@ -10,7 +10,11 @@
 
 package objects
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 // Recurrence describes how a Reminder get triggered repeatedly and regularly.
 type Recurrence uint8
@@ -55,6 +59,72 @@ func (a *Alarmclock) Weekdays() uint8 {
 
 	return days
 } // func (a *Alarmclock) Weekdays() uint8
+
+var wDayStr = []string{
+	"Mo",
+	"Di",
+	"Mi",
+	"Do",
+	"Fr",
+	"Sa",
+	"So",
+}
+
+func (a *Alarmclock) String() string {
+	var (
+		offset, str string
+	)
+
+	if a == nil {
+		return "(None)"
+	}
+
+	offset = fmtOffset(a.Offset)
+
+	switch a.Repeat {
+	case Once:
+		fallthrough
+	case Daily:
+		str = fmt.Sprintf("%s(%s)",
+			a.Repeat,
+			offset)
+	case Custom:
+		var days = make([]string, 0, 7)
+
+		for idx, v := range a.Days {
+			if v {
+				days = append(days, wDayStr[idx])
+			}
+		}
+
+		str = fmt.Sprintf("%s(%s)",
+			a.Repeat,
+			strings.Join(days, ","))
+	default:
+		str = fmt.Sprintf("InvalidRecurrence(%d)", a.Repeat)
+	}
+
+	return str
+} // func (a *Alarmclock) String() string
+
+func fmtOffset(off int) string {
+	var h, m, s int
+
+	if off > 3600 {
+		h = off / 3600
+		off = off % 3600
+	}
+
+	if off > 60 {
+		m = off / 60
+		off = off % 60
+	}
+
+	s = off
+
+	return fmt.Sprintf("%02d:%02d:%02d",
+		h, m, s)
+} // func fmtOffset(off int) string
 
 func b2i(b bool) uint8 {
 	if b {

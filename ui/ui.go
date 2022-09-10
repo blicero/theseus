@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-05 21:38:33 krylon>
+// Time-stamp: <2022-09-10 15:39:22 krylon>
 
 package ui
 
@@ -59,24 +59,31 @@ var cols = []column{
 		colType: glib.TYPE_INT,
 		title:   "ID",
 		display: true,
+		edit:    false,
 	},
 	column{
 		colType: glib.TYPE_STRING,
 		title:   "Title",
 		display: true,
-		edit:    true,
+		edit:    false,
 	},
 	column{
 		colType: glib.TYPE_STRING,
 		title:   "Time",
 		display: true,
-		edit:    true,
+		edit:    false,
+	},
+	column{
+		colType: glib.TYPE_STRING,
+		title:   "Repeat",
+		display: true,
+		edit:    false,
 	},
 	column{
 		colType: glib.TYPE_BOOLEAN,
 		title:   "Finished",
 		display: true,
-		edit:    true,
+		edit:    false,
 	},
 	column{
 		colType: glib.TYPE_STRING,
@@ -503,6 +510,7 @@ func (g *GUI) fetchReminders() (repeat bool) {
 			iter *gtk.TreeIter
 			tstr = r.Timestamp.Format(common.TimestampFormat)
 			cstr = r.Changed.Format(common.TimestampFormat)
+			rstr = r.Recur.String()
 		)
 
 		idList[r.ID] = true
@@ -513,8 +521,8 @@ func (g *GUI) fetchReminders() (repeat bool) {
 
 			g.store.Set( // nolint: errcheck
 				iter,
-				[]int{0, 1, 2, 3, 4, 5},
-				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID, cstr},
+				[]int{0, 1, 2, 3, 4, 5, 6},
+				[]any{r.ID, r.Title, tstr, rstr, r.Finished, r.UUID, cstr},
 			)
 		} else if iter, err = g.getIter(r.ID); err != nil || iter == nil {
 			g.log.Printf("{ERROR] Could not get TreeIter for Reminder #%d\n",
@@ -523,8 +531,8 @@ func (g *GUI) fetchReminders() (repeat bool) {
 		} else {
 			g.store.Set( // nolint: errcheck
 				iter,
-				[]int{0, 1, 2, 3, 4, 5},
-				[]any{r.ID, r.Title, tstr, r.Finished, r.UUID, cstr},
+				[]int{0, 1, 2, 3, 4, 5, 6},
+				[]any{r.ID, r.Title, tstr, rstr, r.Finished, r.UUID, cstr},
 			)
 		}
 	}
@@ -951,8 +959,16 @@ BEGIN:
 
 		g.store.Set( // nolint: errcheck
 			iter,
-			[]int{0, 1, 2, 3, 4, 5},
-			[]any{r.ID, r.Title, r.Timestamp.Format(common.TimestampFormat), r.Finished, r.UUID, r.Changed.Format(common.TimestampFormat)},
+			[]int{0, 1, 2, 3, 4, 5, 6},
+			[]any{
+				r.ID,
+				r.Title,
+				r.Timestamp.Format(common.TimestampFormat),
+				r.Recur.String(),
+				r.Finished,
+				r.UUID,
+				r.Changed.Format(common.TimestampFormat),
+			},
 		)
 
 		g.reminders[r.ID] = r
@@ -1194,16 +1210,24 @@ BEGIN:
 	var (
 		reply    *http.Response
 		response objects.Response
-		buf      bytes.Buffer
+		rcvBuf   bytes.Buffer
+		sndBuf   []byte
 		addr     = fmt.Sprintf("http://%s%s",
 			g.srv,
 			fmt.Sprintf(uriReminderEdit, id))
 		payload = make(url.Values)
 	)
 
-	payload["title"] = []string{r.Title}
-	payload["body"] = []string{r.Description}
-	payload["timestamp"] = []string{r.Timestamp.Format(time.RFC3339)}
+	if sndBuf, err = ffjson.Marshal(r); err != nil {
+		g.log.Printf("[ERROR] Cannot serialize Reminder: %s\n",
+			err.Error())
+		return
+	}
+
+	// payload["title"] = []string{r.Title}
+	// payload["body"] = []string{r.Description}
+	// payload["timestamp"] = []string{r.Timestamp.Format(time.RFC3339)}
+	payload["reminder"] = []string{string(sndBuf)}
 
 	if reply, err = g.web.PostForm(addr, payload); err != nil {
 		g.log.Printf("[ERROR] Failed to submit new Reminder to Backend: %s\n",
@@ -1217,11 +1241,11 @@ BEGIN:
 
 	defer reply.Body.Close() // nolint: errcheck
 
-	if _, err = io.Copy(&buf, reply.Body); err != nil {
+	if _, err = io.Copy(&rcvBuf, reply.Body); err != nil {
 		g.log.Printf("[ERROR] Cannot read HTTP reply from backend: %s\n",
 			err.Error())
 		return
-	} else if err = ffjson.Unmarshal(buf.Bytes(), &response); err != nil {
+	} else if err = ffjson.Unmarshal(rcvBuf.Bytes(), &response); err != nil {
 		g.log.Printf("[ERROR] Cannot de-serialize Response from JSON: %s\n",
 			err.Error())
 		return
@@ -1241,8 +1265,15 @@ BEGIN:
 
 		g.store.Set( // nolint: errcheck
 			iter,
-			[]int{0, 1, 2, 3, 5},
-			[]any{r.ID, r.Title, tstr, r.Finished, cstr},
+			[]int{0, 1, 2, 3, 5, 6},
+			[]any{
+				r.ID,
+				r.Title,
+				tstr,
+				r.Recur.String(),
+				r.Finished,
+				cstr,
+			},
 		)
 	}
 } // func (g *GUI) reminderEdit()

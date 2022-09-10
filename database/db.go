@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-09 21:21:48 krylon>
+// Time-stamp: <2022-09-10 16:44:13 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -1900,7 +1900,7 @@ EXEC_QUERY:
 			}
 		)
 
-		if err = rows.Scan(&rec.ID, &offset, &repeat, &days, &limit, &cnt, &rec.UUID, &changed); err != nil {
+		if err = rows.Scan(&rec.ID, &offset, &repeat, &limit, &cnt, &days, &changed, &rec.UUID); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
@@ -1978,11 +1978,12 @@ EXEC_QUERY:
 			&rec.ReminderID,
 			&offset,
 			&repeat,
-			&days,
 			&limit,
 			&cnt,
+			&days,
+			&changed,
 			&rec.UUID,
-			&changed); err != nil {
+		); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
