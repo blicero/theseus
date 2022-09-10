@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-10 15:39:22 krylon>
+// Time-stamp: <2022-09-10 19:30:53 krylon>
 
 package ui
 
@@ -746,6 +746,7 @@ func (g *GUI) reminderAdd() {
 		titleEntry, bodyEntry              *gtk.Entry
 		hourInput, minuteInput             *gtk.SpinButton
 		timeLbl, sepLbl, titleLbl, bodyLbl *gtk.Label
+		recEdit                            *RecurEditor
 		now                                time.Time
 	)
 
@@ -810,6 +811,10 @@ func (g *GUI) reminderAdd() {
 		g.log.Printf("[ERROR] Cannot create Entry for Body: %s\n",
 			err.Error())
 		return
+	} else if recEdit, err = NewRecurEditor(nil, g.log); err != nil {
+		g.log.Printf("[ERROR] Cannot create Recurrence Editor: %s\n",
+			err.Error())
+		return
 	} else if dbox, err = dlg.GetContentArea(); err != nil {
 		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog: %s\n",
 			err.Error())
@@ -824,6 +829,7 @@ func (g *GUI) reminderAdd() {
 	grid.InsertRow(1)
 	grid.InsertRow(2)
 	grid.InsertRow(3)
+	grid.InsertRow(4)
 
 	grid.Attach(cal, 0, 0, 4, 1)
 	grid.Attach(timeLbl, 0, 1, 1, 1)
@@ -834,6 +840,7 @@ func (g *GUI) reminderAdd() {
 	grid.Attach(titleEntry, 1, 2, 3, 1)
 	grid.Attach(bodyLbl, 0, 3, 1, 1)
 	grid.Attach(bodyEntry, 1, 3, 3, 1)
+	grid.Attach(recEdit.box, 0, 4, 4, 1)
 
 	dbox.PackStart(grid, true, true, 0)
 	dlg.ShowAll()
