@@ -1,47 +1,50 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-10 16:47:42 krylon>
+# Time-stamp: <2022-09-10 21:53:01 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
 #+TAGS: optimize(o) refactor(r) cleanup(c)
+#+TAGS: backend(k)
 #+TODO: TODO(t)  RESEARCH(r) IMPLEMENT(i) TEST(e) | DONE(d) FAILED(f) CANCELLED(c)
 #+TODO: MEDITATE(m) PLANNING(p) | SUSPENDED(s)
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-10 Sa 16:47]
-  | Headline                                     | Time       |           |          |          |      |
-  |----------------------------------------------+------------+-----------+----------+----------+------|
-  | *Total time*                                 | *7d 13:54* |           |          |          |      |
-  |----------------------------------------------+------------+-----------+----------+----------+------|
-  | *Theseus [6/11]*                             | *7d 13:54* |           |          |          |      |
-  | \_  /Components [10/16]/                     |            | /7d 8:58/ |          |          |      |
-  | \_    Recurring Reminders [0/2]              |            |           |     9:24 |          |      |
-  | \_      Display Recurrences                  |            |           |          |     1:29 |      |
-  | \_    Data types                             |            |           |     1:04 |          |      |
-  | \_    Database                               |            |           |     2:38 |          |      |
-  | \_    Networking [3/3]                       |            |           |  1d 7:10 |          |      |
-  | \_      mDNS [1/1]                           |            |           |          |    14:08 |      |
-  | \_        Cache invalidation                 |            |           |          |          | 3:49 |
-  | \_      Synchronization [0/0]                |            |           |          |    17:02 |      |
-  | \_    Backend [3/4]                          |            |           |    23:54 |          |      |
-  | \_      Testing                              |            |           |          |     0:35 |      |
-  | \_      Notifications                        |            |           |          |    12:12 |      |
-  | \_      HTTP API                             |            |           |          |     5:30 |      |
-  | \_    Frontend [4/6]                         |            |           | 2d 10:19 |          |      |
-  | \_      Server on-demand                     |            |           |          |     1:39 |      |
-  | \_      Icon                                 |            |           |          |     0:36 |      |
-  | \_      Filtering and Sorting                |            |           |          |     7:43 |      |
-  | \_      Re-Arm a Reminder                    |            |           |          |     3:59 |      |
-  | \_    Other sources [0/2]                    |            |           |  2d 2:29 |          |      |
-  | \_      Framework?                           |            |           |          |     3:11 |      |
-  | \_      logreader                            |            |           |          | 1d 23:18 |      |
-  | \_  /Cleanup/                                |            | /1:28/    |          |          |      |
-  | \_  /Testing [0/0]/                          |            | /1:30/    |          |          |      |
-  | \_    Database                               |            |           |     1:30 |          |      |
-  | \_  /Bugs/                                   |            | /1:58/    |          |          |      |
-  | \_    Update timestamp when re-activating... |            |           |     1:16 |          |      |
-  | \_    Deleting Reminders                     |            |           |     0:42 |          |      |
+  #+CAPTION: Clock summary at [2022-09-10 Sa 21:52]
+  | Headline                                     | Time       |            |          |          |      |
+  |----------------------------------------------+------------+------------+----------+----------+------|
+  | *Total time*                                 | *7d 16:35* |            |          |          |      |
+  |----------------------------------------------+------------+------------+----------+----------+------|
+  | *Theseus [6/11]*                             | *7d 16:35* |            |          |          |      |
+  | \_  /Components [10/16]/                     |            | /7d 11:39/ |          |          |      |
+  | \_    Recurring Reminders [0/3]              |            |            |    12:05 |          |      |
+  | \_      Display Recurrences                  |            |            |          |     1:29 |      |
+  | \_      Edit Recurrences                     |            |            |          |     2:06 |      |
+  | \_      Handle Recurrences                   |            |            |          |     0:35 |      |
+  | \_    Data types                             |            |            |     1:04 |          |      |
+  | \_    Database                               |            |            |     2:38 |          |      |
+  | \_    Networking [3/3]                       |            |            |  1d 7:10 |          |      |
+  | \_      mDNS [1/1]                           |            |            |          |    14:08 |      |
+  | \_        Cache invalidation                 |            |            |          |          | 3:49 |
+  | \_      Synchronization [0/0]                |            |            |          |    17:02 |      |
+  | \_    Backend [3/4]                          |            |            |    23:54 |          |      |
+  | \_      Testing                              |            |            |          |     0:35 |      |
+  | \_      Notifications                        |            |            |          |    12:12 |      |
+  | \_      HTTP API                             |            |            |          |     5:30 |      |
+  | \_    Frontend [4/6]                         |            |            | 2d 10:19 |          |      |
+  | \_      Server on-demand                     |            |            |          |     1:39 |      |
+  | \_      Icon                                 |            |            |          |     0:36 |      |
+  | \_      Filtering and Sorting                |            |            |          |     7:43 |      |
+  | \_      Re-Arm a Reminder                    |            |            |          |     3:59 |      |
+  | \_    Other sources [0/2]                    |            |            |  2d 2:29 |          |      |
+  | \_      Framework?                           |            |            |          |     3:11 |      |
+  | \_      logreader                            |            |            |          | 1d 23:18 |      |
+  | \_  /Cleanup/                                |            | /1:28/     |          |          |      |
+  | \_  /Testing [0/0]/                          |            | /1:30/     |          |          |      |
+  | \_    Database                               |            |            |     1:30 |          |      |
+  | \_  /Bugs/                                   |            | /1:58/     |          |          |      |
+  | \_    Update timestamp when re-activating... |            |            |     1:16 |          |      |
+  | \_    Deleting Reminders                     |            |            |     0:42 |          |      |
   #+END:
 * Theseus [6/11]
   :PROPERTIES:
@@ -53,7 +56,7 @@
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
    :END:
-*** MEDITATE Recurring Reminders [0/2]           :internals:feature:database:
+*** MEDITATE Recurring Reminders [0/3]           :internals:feature:database:
     :PROPERTIES:
     :COOKIE_DATA: todo recursive
     :VISIBILITY: children
@@ -83,11 +86,20 @@
     though. I shouldn't let increased computational complexity scare me off,
     but it's also harder to model something that mentally in a way that can be
     readily translated into Go and SQL.
-**** TODO Display Recurrences
+**** TODO Display Recurrences                                            :ui:
      :LOGBOOK:
      CLOCK: [2022-09-10 Sa 15:05]--[2022-09-10 Sa 16:34] =>  1:29
      :END:
-**** TODO Edit Recurrences
+**** TODO Edit Recurrences                                               :ui:
+     :LOGBOOK:
+     CLOCK: [2022-09-10 Sa 17:34]--[2022-09-10 Sa 19:40] =>  2:06
+     :END:
+     This is going to be a bit complicated.
+**** TODO Handle Recurrences                                        :backend:
+     :LOGBOOK:
+     CLOCK: [2022-09-10 Sa 21:17]--[2022-09-10 Sa 21:52] =>  0:35
+     :END:
+     My brain just isn't working that well tonight ([2022-09-10 Sa]).
 *** Data types                                                    :internals:
     :LOGBOOK:
     CLOCK: [2022-07-01 Fr 17:48]--[2022-07-01 Fr 17:51] =>  0:03
@@ -276,7 +288,7 @@
      CLOCK: [2022-09-05 Mo 19:16]--[2022-09-05 Mo 19:52] =>  0:36
      :END:
      Before I move any further, I really need an icon.
-**** SUSPENDED Sytray?
+**** SUSPENDED Systray?
      CLOSED: [2022-09-05 Mo 18:28]
      I would /really/ like to have a systray icon.
      A cursory glance to gotk's documentation is not very encouraging,
