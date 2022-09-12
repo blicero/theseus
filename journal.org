@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-10 21:53:01 krylon>
+# Time-stamp: <2022-09-12 18:55:15 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,17 +10,17 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-10 Sa 21:52]
+  #+CAPTION: Clock summary at [2022-09-12 Mo 18:55]
   | Headline                                     | Time       |            |          |          |      |
   |----------------------------------------------+------------+------------+----------+----------+------|
-  | *Total time*                                 | *7d 16:35* |            |          |          |      |
+  | *Total time*                                 | *7d 19:07* |            |          |          |      |
   |----------------------------------------------+------------+------------+----------+----------+------|
-  | *Theseus [6/11]*                             | *7d 16:35* |            |          |          |      |
-  | \_  /Components [10/16]/                     |            | /7d 11:39/ |          |          |      |
-  | \_    Recurring Reminders [0/3]              |            |            |    12:05 |          |      |
+  | *Theseus [6/11]*                             | *7d 19:07* |            |          |          |      |
+  | \_  /Components [10/16]/                     |            | /7d 14:11/ |          |          |      |
+  | \_    Recurring Reminders [0/3]              |            |            |    14:37 |          |      |
   | \_      Display Recurrences                  |            |            |          |     1:29 |      |
   | \_      Edit Recurrences                     |            |            |          |     2:06 |      |
-  | \_      Handle Recurrences                   |            |            |          |     0:35 |      |
+  | \_      Handle Recurrences                   |            |            |          |     3:07 |      |
   | \_    Data types                             |            |            |     1:04 |          |      |
   | \_    Database                               |            |            |     2:38 |          |      |
   | \_    Networking [3/3]                       |            |            |  1d 7:10 |          |      |
@@ -86,6 +86,11 @@
     though. I shouldn't let increased computational complexity scare me off,
     but it's also harder to model something that mentally in a way that can be
     readily translated into Go and SQL.
+    *NB* I did include two fields in the recurrence table to specifiy a
+    Reminder should be repeated a fixed number of times, but for the time
+    being, we are going to ignore them entirely. I just wanted them there so I
+    don't have to change the database schema later on if I ever get around to
+    it.
 **** TODO Display Recurrences                                            :ui:
      :LOGBOOK:
      CLOCK: [2022-09-10 Sa 15:05]--[2022-09-10 Sa 16:34] =>  1:29
@@ -97,6 +102,7 @@
      This is going to be a bit complicated.
 **** TODO Handle Recurrences                                        :backend:
      :LOGBOOK:
+     CLOCK: [2022-09-12 Mo 16:22]--[2022-09-12 Mo 18:54] =>  2:32
      CLOCK: [2022-09-10 Sa 21:17]--[2022-09-10 Sa 21:52] =>  0:35
      :END:
      My brain just isn't working that well tonight ([2022-09-10 Sa]).
