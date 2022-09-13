@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-12 18:55:15 krylon>
+# Time-stamp: <2022-09-13 18:28:27 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,14 +10,15 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-12 Mo 18:55]
+  #+CAPTION: Clock summary at [2022-09-13 Di 18:28]
   | Headline                                     | Time       |            |          |          |      |
   |----------------------------------------------+------------+------------+----------+----------+------|
-  | *Total time*                                 | *7d 19:07* |            |          |          |      |
+  | *Total time*                                 | *7d 20:43* |            |          |          |      |
   |----------------------------------------------+------------+------------+----------+----------+------|
-  | *Theseus [6/11]*                             | *7d 19:07* |            |          |          |      |
-  | \_  /Components [10/16]/                     |            | /7d 14:11/ |          |          |      |
-  | \_    Recurring Reminders [0/3]              |            |            |    14:37 |          |      |
+  | *Theseus [6/11]*                             | *7d 20:43* |            |          |          |      |
+  | \_  /Components [10/16]/                     |            | /7d 15:47/ |          |          |      |
+  | \_    Recurring Reminders [3/4]              |            |            |    16:13 |          |      |
+  | \_      Database schema                      |            |            |          |     1:36 |      |
   | \_      Display Recurrences                  |            |            |          |     1:29 |      |
   | \_      Edit Recurrences                     |            |            |          |     2:06 |      |
   | \_      Handle Recurrences                   |            |            |          |     3:07 |      |
@@ -56,7 +57,7 @@
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
    :END:
-*** MEDITATE Recurring Reminders [0/3]           :internals:feature:database:
+*** MEDITATE Recurring Reminders [3/4]           :internals:feature:database:
     :PROPERTIES:
     :COOKIE_DATA: todo recursive
     :VISIBILITY: children
@@ -91,17 +92,29 @@
     being, we are going to ignore them entirely. I just wanted them there so I
     don't have to change the database schema later on if I ever get around to
     it.
-**** TODO Display Recurrences                                            :ui:
+**** DONE Database schema
+     CLOSED: [2022-09-13 Di 18:27]
+     :LOGBOOK:
+     CLOCK: [2022-09-13 Di 17:29]--[2022-09-13 Di 18:27] =>  0:58
+     CLOCK: [2022-09-13 Di 16:14]--[2022-09-13 Di 16:52] =>  0:38
+     :END:
+     After trying around a bit, I think it was a mistake to put recurrences in
+     a separate table. It's just too hairy, I need them in one place, even if
+     that means making the reminder table pretty wide.
+**** DONE Display Recurrences                                            :ui:
+     CLOSED: [2022-09-13 Di 18:27]
      :LOGBOOK:
      CLOCK: [2022-09-10 Sa 15:05]--[2022-09-10 Sa 16:34] =>  1:29
      :END:
-**** TODO Edit Recurrences                                               :ui:
+**** DONE Edit Recurrences                                               :ui:
+     CLOSED: [2022-09-13 Di 18:27]
      :LOGBOOK:
      CLOCK: [2022-09-10 Sa 17:34]--[2022-09-10 Sa 19:40] =>  2:06
      :END:
      This is going to be a bit complicated.
 **** TODO Handle Recurrences                                        :backend:
      :LOGBOOK:
+     CLOCK: [2022-09-13 Di 18:27]
      CLOCK: [2022-09-12 Mo 16:22]--[2022-09-12 Mo 18:54] =>  2:32
      CLOCK: [2022-09-10 Sa 21:17]--[2022-09-10 Sa 21:52] =>  0:35
      :END:
