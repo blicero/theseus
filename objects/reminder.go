@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-09 21:16:23 krylon>
+// Time-stamp: <2022-09-13 16:15:05 krylon>
 
 package objects
 
@@ -16,7 +16,7 @@ type Reminder struct {
 	Title       string
 	Description string
 	Timestamp   time.Time
-	Recur       *Alarmclock
+	Recur       Alarmclock
 	Finished    bool
 	UUID        string
 	Changed     time.Time

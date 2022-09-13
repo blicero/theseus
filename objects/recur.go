@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-10 15:12:15 krylon>
+// Time-stamp: <2022-09-13 17:45:30 krylon>
 
 //go:generate stringer -type=Recurrence
 
@@ -29,35 +29,43 @@ const (
 	Custom
 )
 
+type Weekdays [7]bool
+
+func (w *Weekdays) Bitfield() uint8 {
+	var days uint8 = b2i(w[0]) |
+		b2i(w[1])<<1 |
+		b2i(w[2])<<2 |
+		b2i(w[3])<<3 |
+		b2i(w[4])<<4 |
+		b2i(w[5])<<5 |
+		b2i(w[6])<<6
+
+	return days
+}
+
 // Alarmclock specifies a potentially recurring point in time
 // as an offset into the day (in seconds) and a Recurrence to
 // specify how the event will repeat.
 type Alarmclock struct {
-	ID         int64
-	ReminderID int64
-	Offset     int
-	Repeat     Recurrence
-	Days       [7]bool
-	Limit      int
-	Counter    int
-	UUID       string
-	Changed    time.Time
+	ID      int64
+	Offset  int
+	Repeat  Recurrence
+	Days    Weekdays
+	Limit   int
+	Counter int
+	UUID    string
+	Changed time.Time
 }
 
 // Go's time package has a type Weekday, too, can I use that somehow?
+// ... Turns out it's not super useful to us because it insists on
+// Sunday being the first days of the week, whereas in Europe it's
+// considered the last day of the week. So no.
 
 // Weekdays returns a uint8 with the bitwise map of the days of the week
 // when a Recurrence occurs.
 func (a *Alarmclock) Weekdays() uint8 {
-	var days uint8 = b2i(a.Days[0]) |
-		b2i(a.Days[1])<<1 |
-		b2i(a.Days[2])<<2 |
-		b2i(a.Days[3])<<3 |
-		b2i(a.Days[4])<<4 |
-		b2i(a.Days[5])<<5 |
-		b2i(a.Days[6])<<6
-
-	return days
+	return a.Days.Bitfield()
 } // func (a *Alarmclock) Weekdays() uint8
 
 var wDayStr = []string{
