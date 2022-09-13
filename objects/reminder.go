@@ -2,11 +2,15 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-13 16:15:05 krylon>
+// Time-stamp: <2022-09-13 21:15:37 krylon>
 
 package objects
 
-import "time"
+import (
+	"time"
+
+	"github.com/blicero/krylib"
+)
 
 //go:generate ffjson reminder.go
 
@@ -24,7 +28,23 @@ type Reminder struct {
 
 // Due returns the Reminder's due time
 func (r *Reminder) Due() time.Time {
-	return r.Timestamp
+	switch r.Recur.Repeat {
+	case Once:
+		return r.Timestamp
+	case Daily:
+		var stamp int64 = r.Timestamp.Unix()
+		var now = time.Now().Unix()
+
+		if stamp < (now % 86400) {
+			// TBD
+		}
+	case Custom:
+		fallthrough
+	default:
+		panic(krylib.ErrNotImplemented)
+		return time.Now()
+	}
+
 } // func (r *Reminder) Due() time.Time
 
 // IsDue returns true if the Reminder's due time has passed.

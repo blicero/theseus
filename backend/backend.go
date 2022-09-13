@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-03 20:57:37 krylon>
+// Time-stamp: <2022-09-13 19:56:50 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -365,7 +365,7 @@ func (d *Daemon) notify(n objects.Notification, timeout int32) error {
 	}
 
 	return nil
-} // func (d *Daemon) notify(n objects.Notification) error
+} // func (d *Daemon) notify(n objects.Notification, timeout int32) error
 
 func (d *Daemon) finishNotification(notID uint32) error {
 	var (
@@ -410,6 +410,12 @@ func (d *Daemon) finishNotification(notID uint32) error {
 	return nil
 } // func (d *Daemon) finishNotification(notID uint32) error
 
+// What would it mean to delay a Reminder that goes off regularly?
+// In that case, we can't just update the timestamp in the database, now,
+// can we?
+// So what do we do in those cases?
+// Basically, we'd have to create a copy of the Reminder that is set to go off
+// in five minutes (or whatever). ...
 func (d *Daemon) delayNotification(nID uint32) error {
 	var (
 		err       error
