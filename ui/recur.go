@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-10 19:37:27 krylon>
+// Time-stamp: <2022-09-13 17:57:53 krylon>
 
 package ui
 
@@ -39,6 +39,7 @@ type RecurEditor struct {
 	weekdays                   [7]*gtk.CheckButton
 }
 
+// NewRecurEditor creates and returns a fresh Editor for Recurrences.
 func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) {
 	var (
 		err error

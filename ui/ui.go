@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-10 19:30:53 krylon>
+// Time-stamp: <2022-09-13 18:18:08 krylon>
 
 package ui
 
@@ -1261,8 +1261,6 @@ BEGIN:
 	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
 		response)
 
-	// Errrr, I cannot append another entry, I need to update the one
-	// we edited in the first place.
 	if response.Status {
 		g.reminders[r.ID] = r
 		var tstr, cstr string
