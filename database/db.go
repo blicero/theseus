@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-13 18:24:21 krylon>
+// Time-stamp: <2022-09-14 21:13:51 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -746,6 +746,7 @@ EXEC_QUERY:
 	defer rows.Close() // nolint: errcheck,gosec
 
 	var items = make([]objects.Reminder, 0)
+	var now = time.Now().Truncate(time.Minute)
 
 	for rows.Next() {
 		var (
@@ -774,15 +775,9 @@ EXEC_QUERY:
 			r.Recur.Days[i] = (days & (1 << i)) != 0
 		}
 
-		// if r.Recur, err = db.RecurrenceGetForReminder(&r); err != nil {
-		// 	db.log.Printf("[ERROR] Cannot get Recurrence for Reminder %q (%d): %s\n",
-		// 		r.Title,
-		// 		r.ID,
-		// 		err.Error())
-		// 	return nil, err
-		// }
-
-		items = append(items, r)
+		if r.Due(&now).Before(t) {
+			items = append(items, r)
+		}
 	}
 
 	return items, nil

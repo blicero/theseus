@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-13 19:56:50 krylon>
+// Time-stamp: <2022-09-14 21:09:12 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -75,7 +75,7 @@ type Daemon struct {
 	lock       sync.RWMutex // nolint: structcheck,unused
 	active     bool
 	hostname   string
-	Queue      chan objects.Notification
+	Queue      chan *objects.Reminder
 	web        http.Server
 	router     *mux.Router
 	mimeTypes  map[string]string
@@ -97,7 +97,7 @@ func Summon(addr string) (*Daemon, error) {
 		d   = &Daemon{
 			listenAddr: addr,
 			active:     true,
-			Queue:      make(chan objects.Notification, queueDepth),
+			Queue:      make(chan *objects.Reminder, queueDepth),
 			router:     mux.NewRouter(),
 			mimeTypes: map[string]string{
 				".css":  "text/css",
@@ -304,7 +304,7 @@ func (d *Daemon) notifyLoop() {
 	}
 } // func (d *Daemon) notifyLoop()
 
-func (d *Daemon) notify(n objects.Notification, timeout int32) error {
+func (d *Daemon) notify(n *objects.Reminder, timeout int32) error {
 	var (
 		err        error
 		obj        = d.bus.Object(notifyObj, notifyPath)
@@ -358,11 +358,9 @@ func (d *Daemon) notify(n objects.Notification, timeout int32) error {
 			ret)
 	}
 
-	if r, ok := n.(*objects.Reminder); ok {
-		d.nLock.Lock()
-		d.pending[r.ID] = ret
-		d.nLock.Unlock()
-	}
+	d.nLock.Lock()
+	d.pending[n.ID] = ret
+	d.nLock.Unlock()
 
 	return nil
 } // func (d *Daemon) notify(n objects.Notification, timeout int32) error

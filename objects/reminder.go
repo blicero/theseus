@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 20:59:44 krylon>
+// Time-stamp: <2022-09-14 21:20:30 krylon>
 
 package objects
 
@@ -25,7 +25,7 @@ type Reminder struct {
 	Changed     time.Time
 }
 
-const tod = "15:04:05"
+// const tod = "15:04:05" // tod == Time Of Day
 
 // Due returns the Reminder's due time.
 // If ref is non-nil, it is used as the reference point from which
