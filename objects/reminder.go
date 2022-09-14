@@ -2,13 +2,15 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 21:20:30 krylon>
+// Time-stamp: <2022-09-14 21:57:45 krylon>
 
 package objects
 
 import (
 	"fmt"
 	"time"
+
+	"github.com/blicero/theseus/common"
 )
 
 //go:generate ffjson reminder.go
@@ -25,7 +27,7 @@ type Reminder struct {
 	Changed     time.Time
 }
 
-// const tod = "15:04:05" // tod == Time Of Day
+const tod = "15:04:05" // tod == Time Of Day
 
 // Due returns the Reminder's due time.
 // If ref is non-nil, it is used as the reference point from which
@@ -57,22 +59,22 @@ func (r *Reminder) Due(ref *time.Time) time.Time {
 			due    = now.Truncate(time.Hour * 24).Add(time.Duration(offset) * time.Second)
 		)
 
-		// fmt.Printf("Reference time is %s\n",
-		// 	now.Format(common.TimestampFormatSubSecond))
-		// fmt.Printf("Offset: %06d | Due: %s\n",
-		// 	offset,
-		// 	due.Format(common.TimestampFormat))
+		fmt.Printf("Reference time is %s\n",
+			now.Format(common.TimestampFormatSubSecond))
+		fmt.Printf("Offset: %06d | Due: %s\n",
+			offset,
+			due.Format(common.TimestampFormat))
 
 		if due.Before(now) {
-			// fmt.Printf("The time of day (%s) is past the time stamp (%s)\n",
-			// 	now.Format(tod),
-			// 	due.Format(tod))
+			fmt.Printf("The time of day (%s) is past the time stamp (%s)\n",
+				now.Format(tod),
+				due.Format(tod))
 			due = due.Add(time.Hour * 24)
 		}
 
 		for !r.Recur.Days.On(due.Weekday()) {
-			// fmt.Printf("Reminder is not due on %s, skipping one day ahead.\n",
-			// 	due.Weekday())
+			fmt.Printf("Reminder is not due on %s, skipping one day ahead.\n",
+				due.Weekday())
 			due = due.Add(time.Hour * 24)
 		}
 
