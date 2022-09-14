@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-13 17:45:30 krylon>
+// Time-stamp: <2022-09-14 20:28:06 krylon>
 
 //go:generate stringer -type=Recurrence
 
@@ -29,8 +29,14 @@ const (
 	Custom
 )
 
+// Weekdays is a list of weekdays that a recurring Reminder can be set
+// to go off on.
 type Weekdays [7]bool
 
+// Bitfield returns an unsigned integer using the least significant bits
+// as flags from right to left, i.e. the least significant bit is Monday,
+// the second bit from the right is Tuesday, etc. The most significant
+// bit it always zero.
 func (w *Weekdays) Bitfield() uint8 {
 	var days uint8 = b2i(w[0]) |
 		b2i(w[1])<<1 |
@@ -43,9 +49,33 @@ func (w *Weekdays) Bitfield() uint8 {
 	return days
 }
 
+// Count returns the number of weekdays the Reminder is set to go off.
+func (w *Weekdays) Count() int {
+	var cnt int
+
+	for _, b := range w {
+		if b {
+			cnt++
+		}
+	}
+
+	return cnt
+} // func (w *Weekdays) Count() int
+
+// On returns the flag value for the given weekday.
+func (w *Weekdays) On(d time.Weekday) bool {
+	return w[(d+6)%7]
+} // func (w *Weekdays) On(d time.Weekday) bool
+
 // Alarmclock specifies a potentially recurring point in time
 // as an offset into the day (in seconds) and a Recurrence to
 // specify how the event will repeat.
+//
+// FIXME: The name is really dumb.
+//        In fact, most of the naming surrounding
+//        recurring Reminders is very bad.
+//        Also, this type doesn't really need a UUID
+//        any more.
 type Alarmclock struct {
 	ID      int64
 	Offset  int
