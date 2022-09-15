@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-15 16:58:44 krylon>
+// Time-stamp: <2022-09-15 19:00:54 krylon>
 
 package ui
 
@@ -32,7 +32,7 @@ var dayName = [7]string{
 // try to create something reusable.
 type RecurEditor struct {
 	log                        *log.Logger
-	rec                        *objects.Recurrence
+	rec                        *objects.Alarmclock
 	box                        *gtk.Box
 	oBox, tBox, cntBox, dayBox *gtk.Box
 	rtCombo                    *gtk.ComboBoxText
@@ -42,7 +42,7 @@ type RecurEditor struct {
 }
 
 // NewRecurEditor creates and returns a fresh Editor for Recurrences.
-func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) {
+func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) {
 	var (
 		err error
 		e   = &RecurEditor{
@@ -50,6 +50,12 @@ func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) 
 			rec: r,
 		}
 	)
+
+	if r == nil {
+		e.rec = new(objects.Alarmclock)
+	} else {
+		e.rec = r
+	}
 
 	if e.box, err = gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 1); err != nil {
 		e.log.Printf("[ERROR] Cannot create gtk.Box: %s\n",
@@ -118,8 +124,29 @@ func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) 
 		e.dayBox.PackStart(v, true, true, 0)
 	}
 
+	var min, hour int
+
+	switch e.rec.Repeat {
+	case objects.Once:
+		// Nothing to do here, move along
+	case objects.Custom:
+		for i, f := range e.rec.Days {
+			e.weekdays[i].SetActive(f)
+		}
+		fallthrough
+	case objects.Daily:
+		hour = e.rec.Offset / 3600
+		min = (e.rec.Offset % 3600) / 60
+
+		e.offHour.SetValue(float64(hour))
+		e.offMin.SetValue(float64(min))
+	default:
+		e.log.Printf("[CANTHAPPEN] Invalid recurrence type: %d\n",
+			r.Repeat)
+	}
+
 	return e, nil
-} // func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error)
+} // func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error)
 
 func (e *RecurEditor) handleTypeChange() {
 	switch txt := e.rtCombo.GetActiveText(); txt {
@@ -139,15 +166,13 @@ func (e *RecurEditor) handleTypeChange() {
 }
 
 func (e *RecurEditor) GetRecurrence() objects.Alarmclock {
-	var c objects.Alarmclock
-
 	switch txt := e.rtCombo.GetActiveText(); txt {
 	case objects.Once.String():
-		c.Repeat = objects.Once
+		e.rec.Repeat = objects.Once
 	case objects.Daily.String():
-		c.Repeat = objects.Daily
+		e.rec.Repeat = objects.Daily
 	case objects.Custom.String():
-		c.Repeat = objects.Custom
+		e.rec.Repeat = objects.Custom
 	default:
 		var msg = fmt.Sprintf("%q is not a valid recurrence type!",
 			txt)
@@ -155,11 +180,11 @@ func (e *RecurEditor) GetRecurrence() objects.Alarmclock {
 		panic(errors.New(msg))
 	}
 
-	c.Offset = int(e.offMin.GetValue())*60 + int(e.offHour.GetValue())*3600
+	e.rec.Offset = int(e.offMin.GetValue())*60 + int(e.offHour.GetValue())*3600
 
 	for i, b := range e.weekdays {
-		c.Days[i] = b.GetActive()
+		e.rec.Days[i] = b.GetActive()
 	}
 
-	return c
+	return *e.rec
 } // func (e *RecurEditor) GetRecurrence() objects.Alarmclock

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-15 17:41:32 krylon>
+// Time-stamp: <2022-09-15 18:54:31 krylon>
 
 package ui
 
@@ -1010,6 +1010,7 @@ func (g *GUI) reminderEdit() {
 		hourInput, minuteInput             *gtk.SpinButton
 		timeLbl, sepLbl, titleLbl, bodyLbl *gtk.Label
 		finishedCB                         *gtk.CheckButton
+		recEdit                            *RecurEditor
 		id                                 int64
 		gval                               *glib.Value
 		rval                               any
@@ -1115,6 +1116,10 @@ func (g *GUI) reminderEdit() {
 		g.log.Printf("[ERROR] Cannot create CheckButton: %s\n",
 			err.Error())
 		return
+	} else if recEdit, err = NewRecurEditor(&r.Recur, g.log); err != nil {
+		g.log.Printf("[ERROR] Cannot create Recurrence Editor: %s\n",
+			err.Error())
+		return
 	} else if dbox, err = dlg.GetContentArea(); err != nil {
 		g.log.Printf("[ERROR] Cannot get ContentArea of Dialog: %s\n",
 			err.Error())
@@ -1130,6 +1135,7 @@ func (g *GUI) reminderEdit() {
 	grid.InsertRow(2)
 	grid.InsertRow(3)
 	grid.InsertRow(4)
+	grid.InsertRow(5)
 
 	grid.Attach(cal, 0, 0, 4, 1)
 	grid.Attach(timeLbl, 0, 1, 1, 1)
@@ -1141,6 +1147,7 @@ func (g *GUI) reminderEdit() {
 	grid.Attach(bodyLbl, 0, 3, 1, 1)
 	grid.Attach(bodyEntry, 1, 3, 3, 1)
 	grid.Attach(finishedCB, 0, 4, 3, 1)
+	grid.Attach(recEdit.box, 0, 5, 3, 1)
 
 	finishedCB.SetActive(r.Finished)
 
@@ -1148,11 +1155,20 @@ func (g *GUI) reminderEdit() {
 	dlg.ShowAll()
 
 BEGIN:
-	cal.SelectMonth(uint(r.Timestamp.Month())-1, uint(r.Timestamp.Year()))
-	cal.SelectDay(uint(r.Timestamp.Day()))
+	if r.Recur.Repeat == objects.Once {
+		cal.SelectMonth(uint(r.Timestamp.Month())-1, uint(r.Timestamp.Year()))
+		cal.SelectDay(uint(r.Timestamp.Day()))
 
-	hourInput.SetValue(float64(r.Timestamp.Hour()))
-	minuteInput.SetValue(float64(r.Timestamp.Minute()) + 10)
+		hourInput.SetValue(float64(r.Timestamp.Hour()))
+		minuteInput.SetValue(float64(r.Timestamp.Minute()) + 10)
+	} else {
+		var min, hour int
+
+		hour = r.Recur.Offset / 3600
+		min = (r.Recur.Offset % 3600) / 60
+		hourInput.SetValue(float64(hour))
+		minuteInput.SetValue(float64(min))
+	}
 
 	titleEntry.SetText(r.Title)
 	bodyEntry.SetText(r.Description)
@@ -1187,15 +1203,20 @@ BEGIN:
 	hour = hourInput.GetValueAsInt()
 	min = minuteInput.GetValueAsInt()
 
-	r.Timestamp = time.Date(
-		int(year),
-		time.Month(month+1),
-		int(day),
-		hour,
-		min,
-		0,
-		0,
-		time.Local)
+	if r.Recur.Repeat == objects.Once {
+		r.Timestamp = time.Date(
+			int(year),
+			time.Month(month+1),
+			int(day),
+			hour,
+			min,
+			0,
+			0,
+			time.Local)
+	} else {
+		r.Timestamp = time.Unix(int64(r.Recur.Offset), 0).In(time.UTC)
+	}
+
 	r.Title, _ = titleEntry.GetText()
 	r.Description, _ = bodyEntry.GetText()
 	r.Finished = finishedCB.GetActive()
@@ -1203,7 +1224,7 @@ BEGIN:
 	g.log.Printf("[DEBUG] Reminder: %#v\n",
 		&r)
 
-	if r.Timestamp.Before(time.Now()) {
+	if r.Recur.Repeat == objects.Once && r.Timestamp.Before(time.Now()) {
 		var msg = fmt.Sprintf("The time you selected is in the past: %s",
 			r.Timestamp.Format(common.TimestampFormat))
 		g.displayMsg(msg)
