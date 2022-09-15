@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 21:57:45 krylon>
+// Time-stamp: <2022-09-15 17:52:10 krylon>
 
 package objects
 
@@ -37,7 +37,7 @@ func (r *Reminder) Due(ref *time.Time) time.Time {
 	var now time.Time
 
 	if ref == nil {
-		now = time.Now()
+		now = time.Now().In(time.UTC)
 	} else {
 		now = *ref
 	}
@@ -77,6 +77,10 @@ func (r *Reminder) Due(ref *time.Time) time.Time {
 				due.Weekday())
 			due = due.Add(time.Hour * 24)
 		}
+
+		fmt.Printf("Reminder IS due on %s at %s\n",
+			due.Weekday(),
+			due.Format(common.TimestampFormatTime))
 
 		return due
 	default:
