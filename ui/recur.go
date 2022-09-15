@@ -2,11 +2,13 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-13 17:57:53 krylon>
+// Time-stamp: <2022-09-15 16:58:44 krylon>
 
 package ui
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"math"
 
@@ -135,3 +137,29 @@ func (e *RecurEditor) handleTypeChange() {
 			txt)
 	}
 }
+
+func (e *RecurEditor) GetRecurrence() objects.Alarmclock {
+	var c objects.Alarmclock
+
+	switch txt := e.rtCombo.GetActiveText(); txt {
+	case objects.Once.String():
+		c.Repeat = objects.Once
+	case objects.Daily.String():
+		c.Repeat = objects.Daily
+	case objects.Custom.String():
+		c.Repeat = objects.Custom
+	default:
+		var msg = fmt.Sprintf("%q is not a valid recurrence type!",
+			txt)
+		e.log.Printf("[CANTHAPPEN] %s\n", msg)
+		panic(errors.New(msg))
+	}
+
+	c.Offset = int(e.offMin.GetValue())*60 + int(e.offHour.GetValue())*3600
+
+	for i, b := range e.weekdays {
+		c.Days[i] = b.GetActive()
+	}
+
+	return c
+} // func (e *RecurEditor) GetRecurrence() objects.Alarmclock

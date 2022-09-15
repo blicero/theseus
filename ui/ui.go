@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 21:34:32 krylon>
+// Time-stamp: <2022-09-15 17:41:32 krylon>
 
 package ui
 
@@ -885,22 +885,29 @@ BEGIN:
 	hour = hourInput.GetValueAsInt()
 	min = minuteInput.GetValueAsInt()
 
-	r.Timestamp = time.Date(
-		int(year),
-		time.Month(month+1),
-		int(day),
-		hour,
-		min,
-		0,
-		0,
-		time.Local)
+	r.Recur = recEdit.GetRecurrence()
+
+	if r.Recur.Repeat == objects.Once {
+		r.Timestamp = time.Date(
+			int(year),
+			time.Month(month+1),
+			int(day),
+			hour,
+			min,
+			0,
+			0,
+			time.Local)
+	} else {
+		r.Timestamp = time.Unix(int64(r.Recur.Offset), 0).In(time.UTC)
+	}
+
 	r.Title, _ = titleEntry.GetText()
 	r.Description, _ = bodyEntry.GetText()
 
 	g.log.Printf("[DEBUG] Reminder: %#v\n",
 		&r)
 
-	if r.Timestamp.Before(time.Now()) {
+	if r.Recur.Repeat == objects.Once && r.Timestamp.Before(time.Now()) {
 		msg = fmt.Sprintf("The time you selected is in the past: %s",
 			r.Timestamp.Format(common.TimestampFormat))
 		g.displayMsg(msg)
