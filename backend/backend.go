@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 21:09:12 krylon>
+// Time-stamp: <2022-09-16 17:58:11 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -270,7 +270,7 @@ func (d *Daemon) notifyLoop() {
 			} else if n.Name == "org.freedesktop.Notifications.ActionInvoked" {
 				var action = n.Body[1].(string)
 				// ... We'll have to deal with it in some way. ;-|
-				d.log.Printf("User clicked %s\n",
+				d.log.Printf("[DEBUG] User clicked %s\n",
 					action)
 
 				switch strings.ToLower(action) {
@@ -307,8 +307,8 @@ func (d *Daemon) notifyLoop() {
 func (d *Daemon) notify(n *objects.Reminder, timeout int32) error {
 	var (
 		err        error
-		obj        = d.bus.Object(notifyObj, notifyPath)
 		head, body string
+		obj        = d.bus.Object(notifyObj, notifyPath)
 	)
 
 	if obj == nil {
@@ -397,6 +397,12 @@ func (d *Daemon) finishNotification(notID uint32) error {
 		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
 			rid)
 		return nil
+	} else if rem.Recur.Repeat != objects.Once {
+		d.log.Printf("[DEBUG] Reminder %d (%q) is recurring (%s)\n",
+			rem.ID,
+			rem.Title,
+			rem.Recur.Repeat)
+		return nil
 	} else if err = db.ReminderSetFinished(rem, true); err != nil {
 		d.log.Printf("[ERROR] Cannot set finished-flag on Reminder %d (%q): %s\n",
 			rid,
@@ -453,6 +459,27 @@ func (d *Daemon) delayNotification(nID uint32) error {
 		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
 			rid)
 		return nil
+	} else if rem.Recur.Repeat != objects.Once {
+		// What does it mean to delay a Reminder that is set to go off
+		// regularly? We need to to post the notification again in a
+		// few minutes, but without touching the database record.
+		//
+		// (Unless the Reminder is also set to go off only a limited
+		// number of times, but currently we are completely ignoring
+		// that part part anyway.)
+		//
+		// How can we do that?
+		// The easiest way I can think of is to start a goroutine
+		// that just waits for the delay interval and sends the Reminder
+		// to the Notification queue again.
+		// I *think* this should be repeatable ad nauseam, so ...
+		// let's try.
+		go func() {
+			time.Sleep(defaultReminderDelay)
+			if d.IsAlive() {
+				d.Queue <- rem
+			}
+		}()
 	} else if err = db.ReminderSetTimestamp(rem, timestamp); err != nil {
 		d.log.Printf("[ERROR] Cannot delay Reminder %d (%q): %s\n",
 			rid,
