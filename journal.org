@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-15 19:43:41 krylon>
+# Time-stamp: <2022-09-16 21:16:53 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,42 +10,42 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-15 Do 19:43]
-  | Headline                                     | Time      |           |          |          |      |
-  |----------------------------------------------+-----------+-----------+----------+----------+------|
-  | *Total time*                                 | *8d 7:26* |           |          |          |      |
-  |----------------------------------------------+-----------+-----------+----------+----------+------|
-  | *Theseus [6/11]*                             | *8d 7:26* |           |          |          |      |
-  | \_  /Components [10/16]/                     |           | /8d 2:30/ |          |          |      |
-  | \_    Recurring Reminders [3/4]              |           |           |  1d 2:56 |          |      |
-  | \_      Database schema                      |           |           |          |     1:36 |      |
-  | \_      Display Recurrences                  |           |           |          |     1:29 |      |
-  | \_      Edit Recurrences                     |           |           |          |     2:06 |      |
-  | \_      Handle Recurrences                   |           |           |          |    13:50 |      |
-  | \_    Data types                             |           |           |     1:04 |          |      |
-  | \_    Database                               |           |           |     2:38 |          |      |
-  | \_    Networking [3/3]                       |           |           |  1d 7:10 |          |      |
-  | \_      mDNS [1/1]                           |           |           |          |    14:08 |      |
-  | \_        Cache invalidation                 |           |           |          |          | 3:49 |
-  | \_      Synchronization [0/0]                |           |           |          |    17:02 |      |
-  | \_    Backend [3/4]                          |           |           |    23:54 |          |      |
-  | \_      Testing                              |           |           |          |     0:35 |      |
-  | \_      Notifications                        |           |           |          |    12:12 |      |
-  | \_      HTTP API                             |           |           |          |     5:30 |      |
-  | \_    Frontend [4/6]                         |           |           | 2d 10:19 |          |      |
-  | \_      Server on-demand                     |           |           |          |     1:39 |      |
-  | \_      Icon                                 |           |           |          |     0:36 |      |
-  | \_      Filtering and Sorting                |           |           |          |     7:43 |      |
-  | \_      Re-Arm a Reminder                    |           |           |          |     3:59 |      |
-  | \_    Other sources [0/2]                    |           |           |  2d 2:29 |          |      |
-  | \_      Framework?                           |           |           |          |     3:11 |      |
-  | \_      logreader                            |           |           |          | 1d 23:18 |      |
-  | \_  /Cleanup/                                |           | /1:28/    |          |          |      |
-  | \_  /Testing [0/0]/                          |           | /1:30/    |          |          |      |
-  | \_    Database                               |           |           |     1:30 |          |      |
-  | \_  /Bugs/                                   |           | /1:58/    |          |          |      |
-  | \_    Update timestamp when re-activating... |           |           |     1:16 |          |      |
-  | \_    Deleting Reminders                     |           |           |     0:42 |          |      |
+  #+CAPTION: Clock summary at [2022-09-16 Fr 21:16]
+  | Headline                                     | Time       |           |          |          |      |
+  |----------------------------------------------+------------+-----------+----------+----------+------|
+  | *Total time*                                 | *8d 12:01* |           |          |          |      |
+  |----------------------------------------------+------------+-----------+----------+----------+------|
+  | *Theseus [6/11]*                             | *8d 12:01* |           |          |          |      |
+  | \_  /Components [10/16]/                     |            | /8d 7:05/ |          |          |      |
+  | \_    Recurring Reminders [3/4]              |            |           |  1d 7:31 |          |      |
+  | \_      Database schema                      |            |           |          |     1:36 |      |
+  | \_      Display Recurrences                  |            |           |          |     1:29 |      |
+  | \_      Edit Recurrences                     |            |           |          |     2:06 |      |
+  | \_      Handle Recurrences                   |            |           |          |    18:25 |      |
+  | \_    Data types                             |            |           |     1:04 |          |      |
+  | \_    Database                               |            |           |     2:38 |          |      |
+  | \_    Networking [3/3]                       |            |           |  1d 7:10 |          |      |
+  | \_      mDNS [1/1]                           |            |           |          |    14:08 |      |
+  | \_        Cache invalidation                 |            |           |          |          | 3:49 |
+  | \_      Synchronization [0/0]                |            |           |          |    17:02 |      |
+  | \_    Backend [3/4]                          |            |           |    23:54 |          |      |
+  | \_      Testing                              |            |           |          |     0:35 |      |
+  | \_      Notifications                        |            |           |          |    12:12 |      |
+  | \_      HTTP API                             |            |           |          |     5:30 |      |
+  | \_    Frontend [4/6]                         |            |           | 2d 10:19 |          |      |
+  | \_      Server on-demand                     |            |           |          |     1:39 |      |
+  | \_      Icon                                 |            |           |          |     0:36 |      |
+  | \_      Filtering and Sorting                |            |           |          |     7:43 |      |
+  | \_      Re-Arm a Reminder                    |            |           |          |     3:59 |      |
+  | \_    Other sources [0/2]                    |            |           |  2d 2:29 |          |      |
+  | \_      Framework?                           |            |           |          |     3:11 |      |
+  | \_      logreader                            |            |           |          | 1d 23:18 |      |
+  | \_  /Cleanup/                                |            | /1:28/    |          |          |      |
+  | \_  /Testing [0/0]/                          |            | /1:30/    |          |          |      |
+  | \_    Database                               |            |           |     1:30 |          |      |
+  | \_  /Bugs/                                   |            | /1:58/    |          |          |      |
+  | \_    Update timestamp when re-activating... |            |           |     1:16 |          |      |
+  | \_    Deleting Reminders                     |            |           |     0:42 |          |      |
   #+END:
 * Theseus [6/11]
   :PROPERTIES:
@@ -114,6 +114,7 @@
      This is going to be a bit complicated.
 **** TODO Handle Recurrences                                        :backend:
      :LOGBOOK:
+     CLOCK: [2022-09-16 Fr 16:41]--[2022-09-16 Fr 21:16] =>  4:35
      CLOCK: [2022-09-15 Do 16:35]--[2022-09-15 Do 19:43] =>  3:08
      CLOCK: [2022-09-14 Mi 21:06]--[2022-09-14 Mi 21:32] =>  0:26
      CLOCK: [2022-09-14 Mi 16:46]--[2022-09-14 Mi 21:06] =>  4:20
