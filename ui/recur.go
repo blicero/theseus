@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-15 19:00:54 krylon>
+// Time-stamp: <2022-09-16 18:57:39 krylon>
 
 package ui
 
@@ -116,6 +116,7 @@ func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) 
 	e.oBox.PackStart(e.offHour, true, true, 0)
 	e.oBox.PackStart(e.offMin, true, true, 0)
 
+	e.rtCombo.SetActive(0)
 	e.rtCombo.Connect("changed", e.handleTypeChange)
 
 	e.tBox.PackStart(e.rtCombo, true, true, 0)
@@ -153,12 +154,24 @@ func (e *RecurEditor) handleTypeChange() {
 	case objects.Once.String():
 		e.cntBox.Hide()
 		e.dayBox.Hide()
+		e.offMin.SetSensitive(false)
+		e.offHour.SetSensitive(false)
+		// e.offMin.SetProperty("editable", false)
+		// e.offHour.SetProperty("editable", false)
 	case objects.Daily.String():
 		e.cntBox.ShowAll()
 		e.dayBox.Hide()
+		e.offMin.SetSensitive(true)
+		e.offHour.SetSensitive(true)
+		// e.offMin.SetProperty("editable", true)
+		// e.offHour.SetProperty("editable", true)
 	case objects.Custom.String():
 		e.cntBox.ShowAll()
 		e.dayBox.ShowAll()
+		e.offMin.SetSensitive(true)
+		e.offHour.SetSensitive(true)
+		// e.offMin.SetProperty("editable", true)
+		// e.offHour.SetProperty("editable", true)
 	default:
 		e.log.Printf("[CANTHAPPEN] %q is not a valid recurrence type!\n",
 			txt)

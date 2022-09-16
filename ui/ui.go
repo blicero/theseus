@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-15 18:54:31 krylon>
+// Time-stamp: <2022-09-16 19:45:04 krylon>
 
 package ui
 
@@ -821,6 +821,22 @@ func (g *GUI) reminderAdd() {
 		return
 	}
 
+	recEdit.rtCombo.Connect("changed",
+		func() {
+			switch txt := recEdit.rtCombo.GetActiveText(); txt {
+			case objects.Once.String():
+				cal.SetSensitive(true)
+				hourInput.SetSensitive(true)
+				minuteInput.SetSensitive(true)
+			case objects.Daily.String():
+				fallthrough
+			case objects.Custom.String():
+				cal.SetSensitive(false)
+				hourInput.SetSensitive(false)
+				minuteInput.SetSensitive(false)
+			}
+		})
+
 	grid.InsertColumn(0)
 	grid.InsertColumn(1)
 	grid.InsertColumn(2)
@@ -989,9 +1005,6 @@ BEGIN:
 	}
 } // func (g *GUI) reminderAdd()
 
-// Just an idea - if I did a little bit of caching, I wouldn't really need
-// to painfully pull all that data out of the TreeModel.
-
 func (g *GUI) reminderEdit() {
 	var (
 		err                                error
@@ -1149,7 +1162,27 @@ func (g *GUI) reminderEdit() {
 	grid.Attach(finishedCB, 0, 4, 3, 1)
 	grid.Attach(recEdit.box, 0, 5, 3, 1)
 
+	// Does it make any sense, like, at all, to edit a finished
+	// Reminder and save it as "finished"?
+	// Not Really, eh?
 	finishedCB.SetActive(r.Finished)
+
+	recEdit.rtCombo.Connect("changed",
+		func() {
+			switch txt := recEdit.rtCombo.GetActiveText(); txt {
+			case objects.Once.String():
+				cal.SetSensitive(true)
+				hourInput.SetSensitive(true)
+				minuteInput.SetSensitive(true)
+			case objects.Daily.String():
+				fallthrough
+			case objects.Custom.String():
+				cal.SetSensitive(false)
+				hourInput.SetSensitive(false)
+				minuteInput.SetSensitive(false)
+			}
+		})
+	recEdit.rtCombo.SetActive(int(r.Recur.Repeat))
 
 	dbox.PackStart(grid, true, true, 0)
 	dlg.ShowAll()
