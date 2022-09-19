@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-15 17:52:10 krylon>
+// Time-stamp: <2022-09-19 18:15:30 krylon>
 
 package objects
 
@@ -34,7 +34,9 @@ const tod = "15:04:05" // tod == Time Of Day
 // to compute the next due time for recurring Reminders, otherwise the
 // current time is used.
 func (r *Reminder) Due(ref *time.Time) time.Time {
-	var now time.Time
+	var (
+		now, t1 time.Time
+	)
 
 	if ref == nil {
 		now = time.Now().In(time.UTC)
@@ -44,15 +46,15 @@ func (r *Reminder) Due(ref *time.Time) time.Time {
 
 	switch r.Recur.Repeat {
 	case Once:
-		return r.Timestamp
+		t1 = r.Timestamp
 	case Daily:
 		var stamp = r.Timestamp.Unix()
 
 		if stamp < (now.Unix() % 86400) {
-			return now.Truncate(time.Second * 86400).Add(time.Second * 86400).Add(time.Second * time.Duration(stamp))
+			t1 = now.Truncate(time.Second * 86400).Add(time.Second * 86400).Add(time.Second * time.Duration(stamp))
+		} else {
+			t1 = now.Truncate(time.Second * 86400).Add(time.Second * time.Duration(stamp))
 		}
-
-		return now.Truncate(time.Second * 86400).Add(time.Second * time.Duration(stamp))
 	case Custom:
 		var (
 			offset = r.Timestamp.Unix()
@@ -82,10 +84,12 @@ func (r *Reminder) Due(ref *time.Time) time.Time {
 			due.Weekday(),
 			due.Format(common.TimestampFormatTime))
 
-		return due
+		t1 = due
 	default:
 		panic(fmt.Errorf("Invalid Recurrence type %d", r.Recur.Repeat))
 	}
+
+	return t1.Truncate(time.Minute)
 } // func (r *Reminder) Due() time.Time
 
 // IsDue returns true if the Reminder's due time has passed.

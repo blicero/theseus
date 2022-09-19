@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 21:13:51 krylon>
+// Time-stamp: <2022-09-19 19:02:42 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -1795,615 +1795,535 @@ EXEC_QUERY:
 	return nil
 } // func (db *Database) ReminderIncCounter(r *objects.Reminder) error
 
-// // RecurrenceAdd adds a Recurrence to the database
-// func (db *Database) RecurrenceAdd(r *objects.Alarmclock) error {
-// 	const qid query.ID = query.RecurrenceAdd
-// 	var (
-// 		err    error
-// 		msg    string
-// 		stmt   *sql.Stmt
-// 		tx     *sql.Tx
-// 		res    sql.Result
-// 		status bool
-// 		now    time.Time
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid.String(),
-// 			err.Error())
-// 		return err
-// 	} else if db.tx != nil {
-// 		tx = db.tx
-// 	} else {
-// 	BEGIN_AD_HOC:
-// 		if tx, err = db.db.Begin(); err != nil {
-// 			if worthARetry(err) {
-// 				waitForRetry()
-// 				goto BEGIN_AD_HOC
-// 			} else {
-// 				msg = fmt.Sprintf("Error starting transaction: %s",
-// 					err.Error())
-// 				db.log.Printf("[ERROR] %s\n", msg)
-// 				return errors.New(msg)
-// 			}
-
-// 		} else {
-// 			defer func() {
-// 				var err2 error
-// 				if status {
-// 					if err2 = tx.Commit(); err2 != nil {
-// 						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
-// 							err2.Error())
-// 					}
-// 				} else if err2 = tx.Rollback(); err2 != nil {
-// 					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
-// 						err2.Error())
-// 				}
-// 			}()
-// 		}
-// 	}
-
-// 	stmt = tx.Stmt(stmt)
-// 	now = time.Now()
-
-// 	if r.UUID == "" {
-// 		r.UUID = common.GetUUID()
-// 	}
-
-// EXEC_QUERY:
-// 	if res, err = stmt.Exec(
-// 		r.ReminderID,
-// 		r.Offset,
-// 		r.Repeat,
-// 		r.Weekdays(),
-// 		r.UUID,
-// 	); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		} else {
-// 			err = fmt.Errorf("Cannot add Recurrence %v to database: %s",
-// 				r,
-// 				err.Error())
-// 			db.log.Printf("[ERROR] %s\n", err.Error())
-// 			return err
-// 		}
-// 	} else {
-// 		var id int64
-
-// 		if id, err = res.LastInsertId(); err != nil {
-// 			db.log.Printf("[ERROR] Cannot get ID of new Recurrence %v: %s\n",
-// 				r,
-// 				err.Error())
-// 			return err
-// 		}
-
-// 		status = true
-// 		r.ID = id
-// 		r.Changed = now
-// 		return nil
-// 	}
-// } // func (db *Database) RecurrenceAdd(r *objects.Alarmclock) error
-
-// // RecurrenceDelete removes a Recurrence from the database.
-// func (db *Database) RecurrenceDelete(r *objects.Alarmclock) error {
-// 	const qid query.ID = query.RecurrenceDelete
-// 	var (
-// 		err    error
-// 		msg    string
-// 		stmt   *sql.Stmt
-// 		tx     *sql.Tx
-// 		status bool
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid.String(),
-// 			err.Error())
-// 		return err
-// 	} else if db.tx != nil {
-// 		tx = db.tx
-// 	} else {
-// 	BEGIN_AD_HOC:
-// 		if tx, err = db.db.Begin(); err != nil {
-// 			if worthARetry(err) {
-// 				waitForRetry()
-// 				goto BEGIN_AD_HOC
-// 			} else {
-// 				msg = fmt.Sprintf("Error starting transaction: %s",
-// 					err.Error())
-// 				db.log.Printf("[ERROR] %s\n", msg)
-// 				return errors.New(msg)
-// 			}
-
-// 		} else {
-// 			defer func() {
-// 				var err2 error
-// 				if status {
-// 					if err2 = tx.Commit(); err2 != nil {
-// 						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
-// 							err2.Error())
-// 					}
-// 				} else if err2 = tx.Rollback(); err2 != nil {
-// 					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
-// 						err2.Error())
-// 				}
-// 			}()
-// 		}
-// 	}
-
-// 	stmt = tx.Stmt(stmt)
-
-// EXEC_QUERY:
-// 	if _, err = stmt.Exec(r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		} else {
-// 			err = fmt.Errorf("Cannot delete Recurrence %v (%d) from database: %s",
-// 				r,
-// 				r.ID,
-// 				err.Error())
-// 			db.log.Printf("[ERROR] %s\n", err.Error())
-// 			return err
-// 		}
-// 	}
-
-// 	status = true
-// 	return nil
-// } // func (db *Database) RecurrenceDelete(r *objects.Alarmclock) error
-
-// // RecurrenceSetOffset sets a Recurrence's offset as seconds from midnight.
-// func (db *Database) RecurrenceSetOffset(r *objects.Alarmclock, offset int) error {
-// 	const qid query.ID = query.RecurrenceSetOffset
-// 	var (
-// 		err    error
-// 		msg    string
-// 		stmt   *sql.Stmt
-// 		tx     *sql.Tx
-// 		status bool
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid.String(),
-// 			err.Error())
-// 		return err
-// 	} else if db.tx != nil {
-// 		tx = db.tx
-// 	} else {
-// 	BEGIN_AD_HOC:
-// 		if tx, err = db.db.Begin(); err != nil {
-// 			if worthARetry(err) {
-// 				waitForRetry()
-// 				goto BEGIN_AD_HOC
-// 			} else {
-// 				msg = fmt.Sprintf("Error starting transaction: %s",
-// 					err.Error())
-// 				db.log.Printf("[ERROR] %s\n", msg)
-// 				return errors.New(msg)
-// 			}
-
-// 		} else {
-// 			defer func() {
-// 				var err2 error
-// 				if status {
-// 					if err2 = tx.Commit(); err2 != nil {
-// 						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
-// 							err2.Error())
-// 					}
-// 				} else if err2 = tx.Rollback(); err2 != nil {
-// 					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
-// 						err2.Error())
-// 				}
-// 			}()
-// 		}
-// 	}
-
-// 	stmt = tx.Stmt(stmt)
-
-// EXEC_QUERY:
-// 	if _, err = stmt.Exec(offset, r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		} else {
-// 			err = fmt.Errorf("Cannot delete Recurrence %v (%d) from database: %s",
-// 				r,
-// 				r.ID,
-// 				err.Error())
-// 			db.log.Printf("[ERROR] %s\n", err.Error())
-// 			return err
-// 		}
-// 	}
-
-// 	status = true
-// 	r.Offset = offset
-// 	return nil
-// } // func (db *Database) RecurrenceSetOffset(r *objects.Alarmclock, offset int) error
-
-// // RecurrenceSetMax sets the maximum number of times a Recurrence can be reapeated.
-// func (db *Database) RecurrenceSetMax(r *objects.Alarmclock, limit int) error {
-// 	const qid query.ID = query.RecurrenceSetOffset
-// 	var (
-// 		err    error
-// 		msg    string
-// 		stmt   *sql.Stmt
-// 		tx     *sql.Tx
-// 		status bool
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid.String(),
-// 			err.Error())
-// 		return err
-// 	} else if db.tx != nil {
-// 		tx = db.tx
-// 	} else {
-// 	BEGIN_AD_HOC:
-// 		if tx, err = db.db.Begin(); err != nil {
-// 			if worthARetry(err) {
-// 				waitForRetry()
-// 				goto BEGIN_AD_HOC
-// 			} else {
-// 				msg = fmt.Sprintf("Error starting transaction: %s",
-// 					err.Error())
-// 				db.log.Printf("[ERROR] %s\n", msg)
-// 				return errors.New(msg)
-// 			}
-
-// 		} else {
-// 			defer func() {
-// 				var err2 error
-// 				if status {
-// 					if err2 = tx.Commit(); err2 != nil {
-// 						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
-// 							err2.Error())
-// 					}
-// 				} else if err2 = tx.Rollback(); err2 != nil {
-// 					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
-// 						err2.Error())
-// 				}
-// 			}()
-// 		}
-// 	}
-
-// 	stmt = tx.Stmt(stmt)
-
-// EXEC_QUERY:
-// 	if _, err = stmt.Exec(limit, r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		} else {
-// 			err = fmt.Errorf("Cannot delete Recurrence %v (%d) from database: %s",
-// 				r,
-// 				r.ID,
-// 				err.Error())
-// 			db.log.Printf("[ERROR] %s\n", err.Error())
-// 			return err
-// 		}
-// 	}
-
-// 	status = true
-// 	r.Limit = limit
-// 	return nil
-// } // func (db *Database) RecurrenceSetMax(r *objects.Alarmclock, limit int) error
-
-// // RecurrenceIsMax returns true if the Recurrence's counter has reached its maximum.
-// func (db *Database) RecurrenceIsMax(r *objects.Alarmclock) (bool, bool, error) {
-// 	const qid query.ID = query.RecurrenceIsMax
-// 	var (
-// 		err  error
-// 		stmt *sql.Stmt
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid,
-// 			err.Error())
-// 		return false, false, err
-// 	} else if db.tx != nil {
-// 		stmt = db.tx.Stmt(stmt)
-// 	}
-
-// 	var rows *sql.Rows
-
-// EXEC_QUERY:
-// 	if rows, err = stmt.Query(r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		}
-
-// 		return false, false, err
-// 	}
-
-// 	defer rows.Close() // nolint: errcheck,gosec
-
-// 	if rows.Next() {
-// 		var maxedOut bool
-
-// 		if err = rows.Scan(&maxedOut); err != nil {
-// 			db.log.Printf("[ERROR] Cannot scan Row: %s\n",
-// 				err.Error())
-// 			return false, true, err
-// 		}
-
-// 		return maxedOut, true, nil
-// 	}
-
-// 	return false, false, nil
-// } // func (db *Database) RecurrenceIsMax(r *objects.Alarmclock) (bool, bool, error)
-
-// // RecurrenceIncCount increases a Recurrence's Counter.
-// func (db *Database) RecurrenceIncCount(r *objects.Alarmclock) error {
-// 	const qid query.ID = query.RecurrenceIncCount
-// 	var (
-// 		err    error
-// 		msg    string
-// 		stmt   *sql.Stmt
-// 		tx     *sql.Tx
-// 		status bool
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid.String(),
-// 			err.Error())
-// 		return err
-// 	} else if db.tx != nil {
-// 		tx = db.tx
-// 	} else {
-// 	BEGIN_AD_HOC:
-// 		if tx, err = db.db.Begin(); err != nil {
-// 			if worthARetry(err) {
-// 				waitForRetry()
-// 				goto BEGIN_AD_HOC
-// 			} else {
-// 				msg = fmt.Sprintf("Error starting transaction: %s",
-// 					err.Error())
-// 				db.log.Printf("[ERROR] %s\n", msg)
-// 				return errors.New(msg)
-// 			}
-
-// 		} else {
-// 			defer func() {
-// 				var err2 error
-// 				if status {
-// 					if err2 = tx.Commit(); err2 != nil {
-// 						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
-// 							err2.Error())
-// 					}
-// 				} else if err2 = tx.Rollback(); err2 != nil {
-// 					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
-// 						err2.Error())
-// 				}
-// 			}()
-// 		}
-// 	}
-
-// 	stmt = tx.Stmt(stmt)
-// 	var rows *sql.Rows
-
-// EXEC_QUERY:
-// 	if rows, err = stmt.Query(r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		} else {
-// 			err = fmt.Errorf("Cannot increment Counter of Recurrence %v (%d): %s",
-// 				r,
-// 				r.ID,
-// 				err.Error())
-// 			db.log.Printf("[ERROR] %s\n", err.Error())
-// 			return err
-// 		}
-// 	}
-
-// 	defer rows.Close()
-
-// 	if rows.Next() {
-// 		var cnt int
-// 		if err = rows.Scan(&cnt); err != nil {
-// 			db.log.Printf("[ERROR] Cannot scan new Counter value from Rows: %s\n", err.Error())
-// 			return err
-// 		}
-
-// 		r.Counter = cnt
-// 	}
-
-// 	status = true
-// 	return nil
-// } // func (db *Database) RecurrenceIncCount(r *objects.Alarmclock) error
-
-// // RecurrenceHasMax checks if the a Recurrence has a maximum number of repetitions set.
-// func (db *Database) RecurrenceHasMax(r *objects.Alarmclock) (bool, bool, error) {
-// 	const qid query.ID = query.RecurrenceHasMax
-// 	var (
-// 		err  error
-// 		stmt *sql.Stmt
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid,
-// 			err.Error())
-// 		return false, false, err
-// 	} else if db.tx != nil {
-// 		stmt = db.tx.Stmt(stmt)
-// 	}
-
-// 	var rows *sql.Rows
-
-// EXEC_QUERY:
-// 	if rows, err = stmt.Query(r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		}
-
-// 		return false, false, err
-// 	}
-
-// 	defer rows.Close() // nolint: errcheck,gosec
-
-// 	if rows.Next() {
-// 		var hasMax bool
-
-// 		if err = rows.Scan(&hasMax); err != nil {
-// 			db.log.Printf("[ERROR] Cannot scan Rows: %s\n",
-// 				err.Error())
-// 			return false, true, err
-// 		}
-
-// 		return hasMax, true, nil
-// 	}
-
-// 	return false, false, nil
-// } // func (db *Database) RecurrenceHasMax(r *objects.AlarmClock) (bool, bool, error)
-
-// // RecurrenceGetForReminder fetches the Recurrence for a given Reminder,
-// // if one exists.
-// func (db *Database) RecurrenceGetForReminder(r *objects.Reminder) (*objects.Alarmclock, error) {
-// 	const qid query.ID = query.RecurrenceGetForReminder
-// 	var (
-// 		err  error
-// 		stmt *sql.Stmt
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid,
-// 			err.Error())
-// 		return nil, err
-// 	} else if db.tx != nil {
-// 		stmt = db.tx.Stmt(stmt)
-// 	}
-
-// 	var rows *sql.Rows
-
-// EXEC_QUERY:
-// 	if rows, err = stmt.Query(r.ID); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		}
-
-// 		return nil, err
-// 	}
-
-// 	defer rows.Close() // nolint: errcheck,gosec
-
-// 	if rows.Next() {
-// 		var (
-// 			offset, repeat, days, limit, cnt, changed int64
-// 			rec                                       = &objects.Alarmclock{
-// 				ReminderID: r.ID,
-// 			}
-// 		)
-
-// 		if err = rows.Scan(&rec.ID, &offset, &repeat, &limit, &cnt, &days, &changed, &rec.UUID); err != nil {
-// 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
-// 			return nil, err
-// 		}
-
-// 		rec.Offset = int(offset)
-// 		rec.Repeat = objects.Recurrence(repeat)
-// 		rec.Limit = int(limit)
-// 		rec.Counter = int(cnt)
-// 		rec.Changed = time.Unix(changed, 0)
-// 		for i := 0; i < 7; i++ {
-// 			rec.Days[i] = (days & (1 << i)) != 0
-// 		}
-
-// 		return rec, nil
-// 	}
-
-// 	return nil, nil
-// } // func (db *Database) RecurrenceGetForReminder(r *objects.Reminder) (*objects.Alarmclock, error)
-
-// // RecurrenceGetByWeekday returns all Recurrences that occur on the given week day.
-// func (db *Database) RecurrenceGetByWeekday(w time.Weekday) ([]objects.Alarmclock, error) {
-// 	const qid query.ID = query.RecurrenceGetByWeekday
-// 	var (
-// 		err  error
-// 		stmt *sql.Stmt
-// 	)
-
-// 	if stmt, err = db.getQuery(qid); err != nil {
-// 		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
-// 			qid,
-// 			err.Error())
-// 		return nil, err
-// 	} else if db.tx != nil {
-// 		stmt = db.tx.Stmt(stmt)
-// 	}
-
-// 	var (
-// 		rows *sql.Rows
-// 		idx  int
-// 	)
-
-// 	if w == time.Sunday {
-// 		idx = 6
-// 	} else {
-// 		idx = int(w) - 1
-// 	}
-
-// EXEC_QUERY:
-// 	if rows, err = stmt.Query(idx); err != nil {
-// 		if worthARetry(err) {
-// 			waitForRetry()
-// 			goto EXEC_QUERY
-// 		}
-
-// 		return nil, err
-// 	}
-
-// 	defer rows.Close() // nolint: errcheck,gosec
-
-// 	var results = make([]objects.Alarmclock, 0, 16)
-
-// 	for rows.Next() {
-// 		var (
-// 			offset,
-// 			repeat,
-// 			days,
-// 			limit,
-// 			cnt,
-// 			changed int64
-// 			rec objects.Alarmclock
-// 		)
-
-// 		if err = rows.Scan(
-// 			&rec.ID,
-// 			&rec.ReminderID,
-// 			&offset,
-// 			&repeat,
-// 			&limit,
-// 			&cnt,
-// 			&days,
-// 			&changed,
-// 			&rec.UUID,
-// 		); err != nil {
-// 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
-// 			return nil, err
-// 		}
-
-// 		rec.Offset = int(offset)
-// 		rec.Repeat = objects.Recurrence(repeat)
-// 		rec.Limit = int(limit)
-// 		rec.Counter = int(cnt)
-// 		rec.Changed = time.Unix(changed, 0)
-// 		for i := 0; i < 7; i++ {
-// 			rec.Days[i] = (days & (1 << i)) != 0
-// 		}
-
-// 		results = append(results, rec)
-// 	}
-
-// 	return results, nil
-// } // func (db *Database) RecurrenceGetByWeekday(w time.Weekday) ([]objects.Alarmclock, error)
+// NotificationAdd creates a new Notification to be displayed for a recurring Reminder
+// at a certain point in time.
+func (db *Database) NotificationAdd(r *objects.Reminder, t time.Time) (*objects.Notification, error) {
+	const qid query.ID = query.NotificationAdd
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return nil, errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+	var (
+		res sql.Result
+		not = &objects.Notification{
+			ReminderID: r.ID,
+			Timestamp:  t,
+		}
+	)
+
+EXEC_QUERY:
+	if res, err = stmt.Exec(r.ID, not.Timestamp.Unix()); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot add Notification for %q to database: %s",
+				r.Title,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return nil, err
+		}
+	} else if not.ID, err = res.LastInsertId(); err != nil {
+		db.log.Printf("[ERROR] Cannot get ID of newly added Notification: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	status = true
+	return not, nil
+} // func NotificationAdd(r *Reminder, t time.Time) (*objects.Notification, error)
+
+// NotificationDisplay stores the time when a Notification has been last displayed.
+func (db *Database) NotificationDisplay(n *objects.Notification, t time.Time) error {
+	const qid query.ID = query.NotificationDisplay
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(t.Unix(), n.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot add Notification %d for Reminder %d to database: %s",
+				n.ID,
+				n.ReminderID,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	n.Displayed = t
+	status = true
+	return nil
+} // func (db *Database) NotificationDisplay(n *objects.Notification) error
+
+// NotificationAcknowledge stores the time when a Notification has been
+// acknowledged by the user and is thus completed.
+func (db *Database) NotificationAcknowledge(n *objects.Notification, t time.Time) error {
+	const qid query.ID = query.NotificationAcknowledge
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(t.Unix(), n.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot acknowledge Notification %d for Reminder %d: %s",
+				n.ID,
+				n.ReminderID,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	n.Acknowledged = t
+	status = true
+	return nil
+} // func (db *Database) NotificationAcknowledge(n *objects.Notification) error
+
+// NotificationGetByID fetches a Notification by its database ID.
+func (db *Database) NotificationGetByID(id int64) (*objects.Notification, error) {
+	const qid query.ID = query.NotificationGetByID
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(id); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load all Reminders: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	if rows.Next() {
+		var (
+			item           = &objects.Notification{ID: id}
+			tstamp         int64
+			dstamp, astamp *int64
+		)
+
+		if err = rows.Scan(&item.ReminderID, &tstamp, &dstamp, &astamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan Row: %s\n",
+				err.Error())
+			return nil, err
+		}
+
+		item.Timestamp = time.Unix(tstamp, 0)
+		if dstamp != nil {
+			item.Displayed = time.Unix(*dstamp, 0)
+		}
+		if astamp != nil {
+			item.Acknowledged = time.Unix(*astamp, 0)
+		}
+
+		return item, nil
+	}
+
+	return nil, nil
+} // func (db *Database) NotificationGetByID(id int64) (n *objects.Notification, error)
+
+// NotificationGetByReminder fetches all Notifications stored for the given
+// Reminder, in reverse chronological order, up to the specified limit.
+// If the limit is a negative number, all Notifications will be fetched.
+func (db *Database) NotificationGetByReminder(r *objects.Reminder, max int) ([]objects.Notification, error) {
+	const qid query.ID = query.NotificationGetByReminder
+	var (
+		err  error
+		stmt *sql.Stmt
+		size int
+	)
+
+	if max > 0 {
+		size = max
+	} else {
+		size = 32
+	}
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(r.ID, max); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load all Reminders: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var items = make([]objects.Notification, 0, size)
+
+	for rows.Next() {
+		var (
+			n              = objects.Notification{ReminderID: r.ID}
+			tstamp         int64
+			dstamp, astamp *int64
+		)
+
+		if err = rows.Scan(&n.ID, &tstamp, &dstamp, &astamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan Row: %s\n",
+				err.Error())
+			return nil, err
+		}
+
+		n.Timestamp = time.Unix(tstamp, 0)
+		if dstamp != nil {
+			n.Displayed = time.Unix(*dstamp, 0)
+		}
+		if astamp != nil {
+			n.Acknowledged = time.Unix(*astamp, 0)
+		}
+
+		items = append(items, n)
+	}
+
+	return items, nil
+} // func (db *Database) NotificationGetByReminder(r *objects.Reminder) ([]objects.Notification, error)
+
+// NotificationGetByReminderStamp fetches a Notification by the given Reminder
+// and Timestamp.
+func (db *Database) NotificationGetByReminderStamp(r *objects.Reminder, t time.Time) (*objects.Notification, error) {
+	const qid query.ID = query.NotificationGetByReminderStamp
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(r.ID, t.Unix()); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load all Reminders: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	if rows.Next() {
+		var (
+			item = &objects.Notification{
+				ReminderID: r.ID,
+				Timestamp:  t,
+			}
+			tstamp         int64
+			dstamp, astamp *int64
+		)
+
+		if err = rows.Scan(&item.ID, &dstamp, &astamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan Row: %s\n",
+				err.Error())
+			return nil, err
+		}
+
+		item.Timestamp = time.Unix(tstamp, 0)
+		if dstamp != nil {
+			item.Displayed = time.Unix(*dstamp, 0)
+		}
+		if astamp != nil {
+			item.Acknowledged = time.Unix(*astamp, 0)
+		}
+
+		return item, nil
+	}
+
+	return nil, nil
+} // func (db *Database) NotificationGetByReminderStamp(r *objects.Reminder, t time.Time) (*objects.Notification, error)
+
+// NotificationGetByReminderPending fetches all Notifications for the
+// given Reminder that have not been acknowledged.
+func (db *Database) NotificationGetByReminderPending(r *objects.Reminder) ([]objects.Notification, error) {
+	const qid query.ID = query.NotificationGetByReminderPending
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(r.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load all Reminders: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var items = make([]objects.Notification, 0, 32)
+
+	for rows.Next() {
+		var (
+			n      = objects.Notification{ReminderID: r.ID}
+			tstamp int64
+			dstamp *int64
+		)
+
+		if err = rows.Scan(&n.ID, &tstamp, &dstamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan Row: %s\n",
+				err.Error())
+			return nil, err
+		}
+
+		n.Timestamp = time.Unix(tstamp, 0)
+		if dstamp != nil {
+			n.Displayed = time.Unix(*dstamp, 0)
+		}
+
+		items = append(items, n)
+	}
+
+	return items, nil
+} // func (db *Database) NotificationGetByReminderPending(r *objects.Reminder) ([]objects.Notification, error)
+
+// NotificationGetPending fetches all Notifications that have not been
+// acknowledged, yet.
+func (db *Database) NotificationGetPending() ([]objects.Notification, error) {
+	const qid query.ID = query.NotificationGetPending
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load all Reminders: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var items = make([]objects.Notification, 0, 32)
+
+	for rows.Next() {
+		var (
+			n      objects.Notification
+			tstamp int64
+			dstamp *int64
+		)
+
+		if err = rows.Scan(&n.ID, &n.ReminderID, &tstamp, &dstamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan Row: %s\n",
+				err.Error())
+			return nil, err
+		}
+
+		n.Timestamp = time.Unix(tstamp, 0)
+		if dstamp != nil {
+			n.Displayed = time.Unix(*dstamp, 0)
+		}
+
+		items = append(items, n)
+	}
+
+	return items, nil
+} // func (db *Database) NotificationGetPending() ([]objects.Notification, error)

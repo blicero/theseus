@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-13 17:54:57 krylon>
+// Time-stamp: <2022-09-19 18:57:28 krylon>
 
 package database
 
@@ -131,51 +131,65 @@ UPDATE reminder
 SET changed = ?
 WHERE id = ?
 `,
-	// 	query.RecurrenceAdd: `
-	// INSERT INTO recurrence (
-	// reminder_id,
-	// offset,
-	// recur_type,
-	// max_count,
-	// counter,
-	// weekdays,
-	// uuid
-	// )
-	// VALUES (
-	//  ?, ?, ?, ?, 0, ?, ?
-	// )
-	// `,
-	// 	query.RecurrenceDelete:    "DELETE FROM recurrence WHERE id = ?",
-	// 	query.RecurrenceSetOffset: "UPDATE recurrence SET offset = ? WHERE id = ?",
-	// 	query.RecurrenceSetMax:    "UPDATE recurrence SET max_count = ? WHERE id = ?",
-	// 	query.RecurrenceIsMax:     "SELECT (counter = max_count) FROM recurrence WHERE id = ?",
-	// 	query.RecurrenceIncCount:  "UPDATE recurrence SET counter = counter + 1 WHERE id = ? RETURNING counter",
-	// 	query.RecurrenceHasMax:    "SELECT (max_count > 0) FROM recurrence WHERE id = ?",
-	// 	query.RecurrenceGetForReminder: `
-	// SELECT
-	//     id,
-	//     offset,
-	//     recur_type,
-	//     max_count,
-	//     counter,
-	//     weekdays,
-	//     changed,
-	//     uuid
-	// FROM recurrence
-	// WHERE reminder_id = ?
-	// `,
-	// 	query.RecurrenceGetByWeekday: `
-	// SELECT
-	//     id,
-	//     reminder_id,
-	//     offset,
-	//     recur_type,
-	//     max_count,
-	//     counter,
-	//     weekdays,
-	//     changed,
-	//     uuid
-	// FROM recurrence
-	// WHERE (weekdays & (1 << ?)) <> 0
-	// `,
+	query.NotificationAdd: `
+INSERT INTO notification (reminder_id, timestamp)
+                  VALUES (          ?,         ?)
+`,
+	query.NotificationDisplay: `
+UPDATE notification
+SET displayed = ?
+WHERE id = ?
+`,
+	query.NotificationAcknowledge: `
+UPDATE notification
+SET acknowledged = ?
+WHERE id = ?
+`,
+	query.NotificationGetByReminder: `
+SELECT
+    id,
+    timestamp,
+    displayed,
+    acknowledged
+FROM notification
+WHERE reminder_id = ?
+ORDER BY timestamp
+LIMIT ?
+`,
+	query.NotificationGetByID: `
+SELECT
+    reminder_id,
+    timestamp,
+    displayed,
+    acknowledged
+FROM notification
+WHERE id = ?
+`,
+	query.NotificationGetByReminderStamp: `
+SELECT
+    id,
+    displayed,
+    acknowledged
+FROM notification
+WHERE reminder_id = ? AND timestamp = ?
+`,
+	query.NotificationGetByReminderPending: `
+SELECT
+    id,
+    timestamp,
+    displayed
+FROM notification
+WHERE reminder_id = ? AND acknowledged IS NULL
+ORDER BY timestamp
+`,
+	query.NotificationGetPending: `
+SELECT
+    id,
+    reminder_id,
+    timestamp,
+    displayed
+FROM notification
+WHERE acknowledged IS NULL
+ORDER BY timestamp
+`,
 }
