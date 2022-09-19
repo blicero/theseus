@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-16 17:58:11 krylon>
+// Time-stamp: <2022-09-19 20:14:39 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -84,7 +84,7 @@ type Daemon struct {
 	idCnt      int64
 	signalQ    chan *dbus.Signal
 	nLock      sync.RWMutex
-	pending    map[int64]uint32
+	pending    map[uint32]int64
 	dnssd      *zeroconf.Server
 	pLock      sync.RWMutex
 	peers      map[string]service
@@ -111,7 +111,7 @@ func Summon(addr string) (*Daemon, error) {
 				".json": "application/json",
 				".html": "text/html",
 			},
-			pending: make(map[int64]uint32),
+			pending: make(map[uint32]int64),
 			peers:   make(map[string]service),
 		}
 	)
@@ -217,7 +217,14 @@ func (d *Daemon) getNotificationID(id int64) (uint32, bool) {
 	)
 
 	d.nLock.RLock()
-	nid, ok = d.pending[id]
+	//nid, ok = d.pending[id]
+	for dbusID, dbID := range d.pending {
+		if id == dbID {
+			nid = dbusID
+			ok = true
+			break
+		}
+	}
 	d.nLock.RUnlock()
 
 	return nid, ok
@@ -225,20 +232,8 @@ func (d *Daemon) getNotificationID(id int64) (uint32, bool) {
 
 func (d *Daemon) removePending(id uint32) {
 	d.nLock.Lock()
-	defer d.nLock.Unlock()
-
-	var remID int64
-
-	for rid, nid := range d.pending {
-		if nid == id {
-			remID = rid
-			break
-		}
-	}
-
-	if remID != 0 {
-		delete(d.pending, remID)
-	}
+	delete(d.pending, id)
+	d.nLock.Unlock()
 } // func (d *Daemon) removePending(nid uint32)
 
 func (d *Daemon) notifyLoop() {
@@ -258,7 +253,8 @@ func (d *Daemon) notifyLoop() {
 			d.log.Printf("[DEBUG] Received signal: %#v\n",
 				n)
 
-			if n.Name == "org.freedesktop.Notifications.NotificationClosed" {
+			switch n.Name {
+			case "org.freedesktop.Notifications.NotificationClosed":
 				var (
 					nid uint32
 					ok  bool
@@ -267,7 +263,7 @@ func (d *Daemon) notifyLoop() {
 				if nid, ok = n.Body[0].(uint32); ok {
 					d.removePending(nid)
 				}
-			} else if n.Name == "org.freedesktop.Notifications.ActionInvoked" {
+			case "org.freedesktop.Notifications.ActionInvoked":
 				var action = n.Body[1].(string)
 				// ... We'll have to deal with it in some way. ;-|
 				d.log.Printf("[DEBUG] User clicked %s\n",
@@ -304,10 +300,13 @@ func (d *Daemon) notifyLoop() {
 	}
 } // func (d *Daemon) notifyLoop()
 
-func (d *Daemon) notify(n *objects.Reminder, timeout int32) error {
+func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 	var (
 		err        error
 		head, body string
+		db         *database.Database
+		due, now   time.Time
+		pending    []objects.Notification
 		obj        = d.bus.Object(notifyObj, notifyPath)
 	)
 
@@ -319,58 +318,106 @@ func (d *Daemon) notify(n *objects.Reminder, timeout int32) error {
 		return err
 	}
 
-	head, body = n.Payload()
+	head, body = r.Payload()
+	due = r.Due(nil)
 
-	var res = obj.Call(
-		notifyMethod,
-		0,
-		common.AppName,
-		uint32(0),
-		"",
-		head,
-		body,
-		[]string{
-			"OK",
-			"OK",
-			"Delay",
-			"Delay",
-		},
-		map[string]*dbus.Variant{},
-		timeout,
-	)
+	db = d.pool.Get()
+	defer d.pool.Put(db)
 
-	if res.Err != nil {
-		d.log.Printf("[ERROR] Cannot send Notification %q: %s\n",
-			head,
-			res.Err.Error())
-		return res.Err
-	}
-
-	var ret uint32
-
-	if err = res.Store(&ret); err != nil {
-		d.log.Printf("[ERROR] Cannot store return value of %s: %s\n",
-			notifyMethod,
+	if pending, err = db.NotificationGetByReminderPending(r); err != nil {
+		d.log.Printf("[ERROR] Cannot fetch pending Notifications for Reminder %q (%d): %s\n",
+			r.Title,
+			r.ID,
 			err.Error())
 		return err
-	} else if common.Debug {
-		d.log.Printf("[DEBUG] RESPONSE: %d\n",
-			ret)
 	}
 
-	d.nLock.Lock()
-	d.pending[n.ID] = ret
-	d.nLock.Unlock()
+	var found bool
 
+	for _, n := range pending {
+		if n.Timestamp.Equal(due) {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		var n *objects.Notification
+
+		if n, err = db.NotificationAdd(r, due); err != nil {
+			d.log.Printf("[ERROR] Cannot add Notification for Reminder %d at %s: %s\n",
+				r.ID,
+				due.Format(common.TimestampFormat),
+				err.Error())
+			return err
+		}
+
+		pending = append(pending, *n)
+	}
+
+	now = time.Now().Truncate(time.Minute)
+
+	for _, n := range pending {
+		var res = obj.Call(
+			notifyMethod,
+			0,
+			common.AppName,
+			uint32(0),
+			"",
+			head,
+			body,
+			[]string{
+				"OK",
+				"OK",
+				"Delay",
+				"Delay",
+			},
+			map[string]*dbus.Variant{},
+			timeout,
+		)
+
+		if res.Err != nil {
+			d.log.Printf("[ERROR] Cannot send Notification %q: %s\n",
+				head,
+				res.Err.Error())
+			return res.Err
+		}
+
+		var ret uint32
+
+		if err = res.Store(&ret); err != nil {
+			d.log.Printf("[ERROR] Cannot store return value of %s: %s\n",
+				notifyMethod,
+				err.Error())
+			return err
+		} else if common.Debug {
+			d.log.Printf("[DEBUG] RESPONSE: %d\n",
+				ret)
+		}
+
+		if err = db.NotificationDisplay(&n, now); err != nil {
+			d.log.Printf("[ERROR] Cannot set Display stamp for Notification %d at %s: %s\n",
+				n.ID,
+				now.Format(common.TimestampFormat),
+				err.Error())
+		} else {
+			d.nLock.Lock()
+			d.pending[ret] = n.ID
+			d.nLock.Unlock()
+		}
+
+	}
 	return nil
 } // func (d *Daemon) notify(n objects.Notification, timeout int32) error
 
 func (d *Daemon) finishNotification(notID uint32) error {
 	var (
-		err error
-		db  *database.Database
-		rem *objects.Reminder
-		rid int64
+		err      error
+		db       *database.Database
+		rem      *objects.Reminder
+		not      *objects.Notification
+		nid, rid int64
+		ok       bool
 	)
 
 	db = d.pool.Get()
@@ -379,16 +426,23 @@ func (d *Daemon) finishNotification(notID uint32) error {
 	d.nLock.RLock()
 	defer d.nLock.RUnlock()
 
-	for nid, did := range d.pending {
-		if did == notID {
-			rid = nid
-			break
-		}
+	if nid, ok = d.pending[notID]; !ok {
+		return nil
 	}
 
-	if rid == 0 {
+	defer delete(d.pending, notID)
+
+	if not, err = db.NotificationGetByID(nid); err != nil {
+		d.log.Printf("[ERROR] Cannot get Notification %d: %s\n",
+			nid,
+			err.Error())
+
+		return err
+	} else if not == nil {
+		d.log.Printf("[ERROR] Could not find Notification %d in database\n",
+			nid)
 		return nil
-	} else if rem, err = db.ReminderGetByID(rid); err != nil {
+	} else if rem, err = db.ReminderGetByID(not.ReminderID); err != nil {
 		d.log.Printf("[ERROR] Cannot look up Reminder #%d: %s\n",
 			rid,
 			err.Error())
@@ -402,13 +456,19 @@ func (d *Daemon) finishNotification(notID uint32) error {
 			rem.ID,
 			rem.Title,
 			rem.Recur.Repeat)
-		return nil
 	} else if err = db.ReminderSetFinished(rem, true); err != nil {
 		d.log.Printf("[ERROR] Cannot set finished-flag on Reminder %d (%q): %s\n",
 			rid,
 			rem.Title,
 			err.Error())
 		return err
+	}
+
+	if err = db.NotificationAcknowledge(not, time.Now()); err != nil {
+		d.log.Printf("[ERROR] Failed to acknowledge Notification %d for Reminder %d: %s\n",
+			not.ID,
+			rem.ID,
+			err.Error())
 	}
 
 	return nil
@@ -425,7 +485,9 @@ func (d *Daemon) delayNotification(nID uint32) error {
 		err       error
 		db        *database.Database
 		rem       *objects.Reminder
-		rid       int64
+		not       *objects.Notification
+		nid       int64
+		ok        bool
 		timestamp = time.Now().Add(defaultReminderDelay)
 	)
 
@@ -439,25 +501,34 @@ func (d *Daemon) delayNotification(nID uint32) error {
 	d.nLock.RLock()
 	defer d.nLock.RUnlock()
 
-	for nid, did := range d.pending {
-		if did == nID {
-			rid = nid
-			break
-		}
+	if nid, ok = d.pending[nID]; !ok {
+		err = fmt.Errorf("Did not find database ID for Notification %d",
+			nID)
+		d.log.Printf("[ERROR] %s\n",
+			err.Error())
+		return err
 	}
 
-	if rid == 0 {
-		d.log.Printf("[INFO] Did not find database ID for Notification ID %d\n",
-			nID)
-		return nil
-	} else if rem, err = db.ReminderGetByID(rid); err != nil {
+	defer delete(d.pending, nID)
+
+	if not, err = db.NotificationGetByID(nid); err != nil {
+		d.log.Printf("[ERROR] Failed to look up Notification %d in database: %s\n",
+			nid)
+		return err
+	} else if not == nil {
+		err = fmt.Errorf("Did not find Notficiation %d in database",
+			nid)
+		d.log.Printf("[ERROR] %s\n",
+			err.Error())
+		return err
+	} else if rem, err = db.ReminderGetByID(not.ReminderID); err != nil {
 		d.log.Printf("[ERROR] Cannot look up Reminder #%d: %s\n",
-			rid,
+			not.ReminderID,
 			err.Error())
 		return err
 	} else if rem == nil {
 		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
-			rid)
+			not.ReminderID)
 		return nil
 	} else if rem.Recur.Repeat != objects.Once {
 		// What does it mean to delay a Reminder that is set to go off
@@ -482,7 +553,7 @@ func (d *Daemon) delayNotification(nID uint32) error {
 		}()
 	} else if err = db.ReminderSetTimestamp(rem, timestamp); err != nil {
 		d.log.Printf("[ERROR] Cannot delay Reminder %d (%q): %s\n",
-			rid,
+			rem.ID,
 			rem.Title,
 			err.Error())
 		return err
@@ -491,6 +562,7 @@ func (d *Daemon) delayNotification(nID uint32) error {
 	return nil
 } // func (d *Daemon) delayNotification(nID uint32) error
 
+// dbLoop periodically checks for pending Reminders in the database.
 func (d *Daemon) dbLoop() {
 	defer d.log.Println("[TRACE] dbLoop is shutting down")
 
@@ -508,6 +580,9 @@ func (d *Daemon) dbLoop() {
 	}
 } // func (d *Daemon) dbLoop()
 
+// dbCheck does the actual interaction with the database for dbLoop.
+// We does this in a separate method so we can use defer to put the
+// database connection back to the pool.
 func (d *Daemon) dbCheck() error {
 	var (
 		err       error
