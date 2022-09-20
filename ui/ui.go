@@ -413,46 +413,7 @@ func (g *GUI) fetchReminders() (repeat bool) {
 		if strings.Contains(err.Error(), "connection refused") {
 			g.log.Printf("[INFO] It would appear as if the backend is not currently running, maybe I should start it? - %s\n",
 				err.Error())
-
-			g.lock.Lock()
-			defer g.lock.Unlock()
-
-			if g.spawnCnt >= maxSpawnAttempts {
-				return true
-			}
-
-			g.spawnCnt++
-
-			// Maybe, instead of spawning a separate process, we
-			// can start the backend inside our process?
-			// It's not a very elegant solution, but it should
-			// work.
-			var addr = fmt.Sprintf(":%d", common.DefaultPort)
-			var daemon *backend.Daemon
-
-			if daemon, err = backend.Summon(addr); err != nil {
-				g.log.Printf("[ERROR] Failed to start backend: %s\n",
-					err.Error())
-				return true
-
-			}
-
-			go func() {
-				var sigQ = make(chan os.Signal, 1)
-				var ticker = time.NewTicker(time.Second * 2)
-
-				signal.Notify(sigQ, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
-
-				for daemon.IsAlive() {
-					select {
-					case sig := <-sigQ:
-						fmt.Printf("Quitting on signal %s\n", sig)
-						return
-					case <-ticker.C:
-						continue
-					}
-				}
-			}()
+			g.spawnBackend()
 		} else {
 			g.log.Printf("[ERROR] Failed Request to backend for %q: %s\n",
 				rawURL,
@@ -1788,3 +1749,49 @@ func (g *GUI) synchronize() {
 	g.pushMsg(msg)
 	g.log.Printf("[INFO] %s\n", msg)
 } // func (g *GUI) synchronize()
+
+func (g *GUI) spawnBackend() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	if g.spawnCnt >= maxSpawnAttempts {
+		return
+	}
+
+	g.spawnCnt++
+
+	// Maybe, instead of spawning a separate process, we
+	// can start the backend inside our process?
+	// It's not a very elegant solution, but it should
+	// work.
+	var (
+		err    error
+		daemon *backend.Daemon
+		addr   = fmt.Sprintf(":%d", common.DefaultPort)
+	)
+
+	if daemon, err = backend.Summon(addr); err != nil {
+		g.log.Printf("[ERROR] Failed to start backend: %s\n",
+			err.Error())
+		return
+
+	}
+
+	go func() {
+		var sigQ = make(chan os.Signal, 1)
+		var ticker = time.NewTicker(time.Second * 2)
+
+		signal.Notify(sigQ, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+
+		for daemon.IsAlive() {
+			select {
+			case sig := <-sigQ:
+				daemon.Banish() // nolint: errcheck
+				fmt.Printf("Quitting on signal %s\n", sig)
+				return
+			case <-ticker.C:
+				continue
+			}
+		}
+	}()
+} // func (g *GUI) spawnBackend()
