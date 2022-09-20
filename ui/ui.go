@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-20 16:36:13 krylon>
+// Time-stamp: <2022-09-20 17:57:58 krylon>
 
 package ui
 
@@ -852,19 +852,19 @@ BEGIN:
 		return
 	}
 
-	var (
-		year, month, day uint
-		hour, min        int
-		r                objects.Reminder
-	)
-
-	year, month, day = cal.GetDate()
-	hour = hourInput.GetValueAsInt()
-	min = minuteInput.GetValueAsInt()
+	var r objects.Reminder
 
 	r.Recur = recEdit.GetRecurrence()
 
 	if r.Recur.Repeat == objects.Once {
+		var (
+			year, month, day uint
+			hour, min        int
+		)
+
+		year, month, day = cal.GetDate()
+		hour = hourInput.GetValueAsInt()
+		min = minuteInput.GetValueAsInt()
 		r.Timestamp = time.Date(
 			int(year),
 			time.Month(month+1),
@@ -942,27 +942,34 @@ BEGIN:
 		return
 	}
 
-	g.log.Printf("[DEBUG] Got response from backend: %#v\n",
-		response)
+	// g.log.Printf("[DEBUG] Got response from backend: %#v\n",
+	// 	response)
 
 	if response.Status {
-		var iter = g.store.Append()
+		glib.IdleAdd(func() bool {
+			g.fetchReminders()
+			return false
+		})
+		// var iter = g.store.Append()
 
-		g.store.Set( // nolint: errcheck
-			iter,
-			[]int{0, 1, 2, 3, 4, 5, 6},
-			[]any{
-				r.ID,
-				r.Title,
-				r.DueNext(nil).Format(common.TimestampFormat),
-				r.Recur.String(),
-				r.Finished,
-				r.UUID,
-				r.Changed.Format(common.TimestampFormat),
-			},
-		)
+		// g.store.Set( // nolint: errcheck
+		// 	iter,
+		// 	[]int{0, 1, 2, 3, 4, 5, 6},
+		// 	[]any{
+		// 		r.ID,
+		// 		r.Title,
+		// 		r.DueNext(nil).Format(common.TimestampFormat),
+		// 		r.Recur.String(),
+		// 		r.Finished,
+		// 		r.UUID,
+		// 		r.Changed.Format(common.TimestampFormat),
+		// 	},
+		// )
 
-		g.reminders[r.ID] = r
+		// g.reminders[r.ID] = r
+	} else {
+		g.log.Printf("[ERROR] Failed to add Reminder to Database: %s\n",
+			response.Message)
 	}
 } // func (g *GUI) reminderAdd()
 
