@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-20 15:16:33 krylon>
+// Time-stamp: <2022-09-20 16:46:16 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -38,7 +38,7 @@ const (
 	notifyPath           = "/org/freedesktop/Notifications"
 	notifyMethod         = "org.freedesktop.Notifications.Notify"
 	queueDepth           = 5
-	queueTimeout         = time.Second * 2
+	queueTimeout         = time.Second * 30
 	defaultReminderDelay = time.Second * 300
 )
 
@@ -427,6 +427,8 @@ func (d *Daemon) finishNotification(notID uint32) error {
 	defer d.nLock.RUnlock()
 
 	if nid, ok = d.pending[notID]; !ok {
+		d.log.Printf("[INFO] Notification ID %d was not found in cache\n",
+			notID)
 		return nil
 	}
 
