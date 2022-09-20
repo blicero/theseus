@@ -319,7 +319,7 @@ func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 	}
 
 	head, body = r.Payload()
-	due = r.Due(nil)
+	due = r.DueNext(nil)
 
 	db = d.pool.Get()
 	defer d.pool.Put(db)

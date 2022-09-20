@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-16 19:45:04 krylon>
+// Time-stamp: <2022-09-20 16:36:13 krylon>
 
 package ui
 
@@ -508,7 +508,7 @@ func (g *GUI) fetchReminders() (repeat bool) {
 		var (
 			ok   bool
 			iter *gtk.TreeIter
-			tstr = r.Due(nil).Format(common.TimestampFormat)
+			tstr = r.DueNext(nil).Format(common.TimestampFormat)
 			cstr = r.Changed.Format(common.TimestampFormat)
 			rstr = r.Recur.String()
 		)
@@ -993,7 +993,7 @@ BEGIN:
 			[]any{
 				r.ID,
 				r.Title,
-				r.Due(nil).Format(common.TimestampFormat),
+				r.DueNext(nil).Format(common.TimestampFormat),
 				r.Recur.String(),
 				r.Finished,
 				r.UUID,

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-19 18:15:30 krylon>
+// Time-stamp: <2022-09-20 16:24:45 krylon>
 
 package objects
 
@@ -29,11 +29,11 @@ type Reminder struct {
 
 const tod = "15:04:05" // tod == Time Of Day
 
-// Due returns the Reminder's due time.
+// DueNext returns the Reminder's due time.
 // If ref is non-nil, it is used as the reference point from which
 // to compute the next due time for recurring Reminders, otherwise the
 // current time is used.
-func (r *Reminder) Due(ref *time.Time) time.Time {
+func (r *Reminder) DueNext(ref *time.Time) time.Time {
 	var (
 		now, t1 time.Time
 	)
@@ -90,7 +90,66 @@ func (r *Reminder) Due(ref *time.Time) time.Time {
 	}
 
 	return t1.Truncate(time.Minute)
-} // func (r *Reminder) Due() time.Time
+} // func (r *Reminder) DueNext() time.Time
+
+func (r *Reminder) DuePrev(ref *time.Time) time.Time {
+	var (
+		now, t1 time.Time
+	)
+
+	if ref == nil {
+		now = time.Now().In(time.UTC)
+	} else {
+		now = *ref
+	}
+
+	switch r.Recur.Repeat {
+	case Once:
+		t1 = r.Timestamp
+	case Daily:
+		var stamp = r.Timestamp.Unix()
+
+		if stamp > (now.Unix() % 86400) {
+			t1 = now.Truncate(time.Second * 86400).Add(time.Second * -86400).Add(time.Second * time.Duration(stamp))
+		} else {
+			t1 = now.Truncate(time.Second * 86400).Add(time.Second * time.Duration(stamp))
+		}
+	case Custom:
+		var (
+			offset = r.Timestamp.Unix()
+			due    = now.Truncate(time.Hour * 24).Add(time.Duration(offset) * time.Second)
+		)
+
+		fmt.Printf("Reference time is %s\n",
+			now.Format(common.TimestampFormatSubSecond))
+		fmt.Printf("Offset: %06d | Due: %s\n",
+			offset,
+			due.Format(common.TimestampFormat))
+
+		if due.After(now) {
+			fmt.Printf("The time of day (%s) is past the time stamp (%s)\n",
+				now.Format(tod),
+				due.Format(tod))
+			due = due.Add(time.Hour * -24)
+		}
+
+		for !r.Recur.Days.On(due.Weekday()) {
+			fmt.Printf("Reminder is not due on %s, skipping one day ahead.\n",
+				due.Weekday())
+			due = due.Add(time.Hour * -24)
+		}
+
+		fmt.Printf("Reminder IS due on %s at %s\n",
+			due.Weekday(),
+			due.Format(common.TimestampFormatTime))
+
+		t1 = due
+	default:
+		panic(fmt.Errorf("Invalid Recurrence type %d", r.Recur.Repeat))
+	}
+
+	return t1.Truncate(time.Minute)
+} // func (r *Reminder) DuePrev(ref *time.Time) time.Time
 
 // IsDue returns true if the Reminder's due time has passed.
 func (r *Reminder) IsDue() bool {

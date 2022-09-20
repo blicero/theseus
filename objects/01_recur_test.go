@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 14. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 20:59:15 krylon>
+// Time-stamp: <2022-09-20 16:36:14 krylon>
 
 package objects
 
@@ -92,7 +92,7 @@ func TestDue(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		var due = c.r.Due(&c.ref)
+		var due = c.r.DueNext(&c.ref)
 
 		if delta := due.Truncate(time.Minute).Sub(c.expectDue.Truncate(time.Minute)); delta > time.Minute {
 			t.Errorf(`Unexpected due time from Test case %s:
