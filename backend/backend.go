@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-19 20:14:39 krylon>
+// Time-stamp: <2022-09-20 15:16:33 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -513,7 +513,8 @@ func (d *Daemon) delayNotification(nID uint32) error {
 
 	if not, err = db.NotificationGetByID(nid); err != nil {
 		d.log.Printf("[ERROR] Failed to look up Notification %d in database: %s\n",
-			nid)
+			nid,
+			err.Error())
 		return err
 	} else if not == nil {
 		err = fmt.Errorf("Did not find Notficiation %d in database",
