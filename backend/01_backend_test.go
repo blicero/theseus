@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 02. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-07-23 19:29:56 krylon>
+// Time-stamp: <2022-09-20 15:26:05 krylon>
 
 package backend
 
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/blicero/theseus/common"
+	"github.com/blicero/theseus/database"
 	"github.com/blicero/theseus/objects"
 )
 
@@ -38,14 +39,22 @@ func TestNotify(t *testing.T) {
 		err error
 		msg = fmt.Sprintf("%s: Testing, Testing, 1, 2, 3!",
 			time.Now().Format(common.TimestampFormat))
+		db  *database.Database
 		rem = &objects.Reminder{
-			ID:          42,
 			Title:       "Testing, one, two",
 			Description: msg,
 			Timestamp:   time.Now(),
 			UUID:        common.GetUUID(),
 		}
 	)
+
+	db = back.pool.Get()
+	defer back.pool.Put(db)
+
+	if err = db.ReminderAdd(rem); err != nil {
+		t.Errorf("Cannot add Reminder to database: %s",
+			err.Error())
+	}
 
 	if err = back.notify(rem, timeout); err != nil {
 		t.Errorf("Cannot send notification via DBus: %s",
