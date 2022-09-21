@@ -44,6 +44,9 @@ const (
 	DefaultPort              = 9596
 )
 
+// Epoch is the beginning of time.
+var Epoch = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+
 // LogLevels are the names of the log levels supported by the logger.
 var LogLevels = []logutils.LogLevel{
 	"TRACE",
