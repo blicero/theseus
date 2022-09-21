@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-09-19 18:31:54 krylon>
+// Time-stamp: <2022-09-21 19:48:24 krylon>
 
 package common
 
@@ -34,7 +34,7 @@ import (
 // application.
 const (
 	AppName                  = "Theseus"
-	Version                  = "0.3.0"
+	Version                  = "0.4.0"
 	Debug                    = true
 	TimestampFormatMinute    = "2006-01-02 15:04"
 	TimestampFormat          = "2006-01-02 15:04:05"
