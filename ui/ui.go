@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-20 17:57:58 krylon>
+// Time-stamp: <2022-09-21 19:40:44 krylon>
 
 package ui
 
@@ -586,7 +586,9 @@ func (g *GUI) fetchPeers() bool {
 		return true
 	}
 
-	g.log.Printf("[TRACE] Received %d peers from Backend\n", len(peers))
+	if len(peers) > 0 {
+		g.log.Printf("[TRACE] Received %d peers from Backend\n", len(peers))
+	}
 
 	for k := range g.peers {
 		delete(g.peers, k)

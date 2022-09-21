@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 24. 08. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-15 19:15:17 krylon>
+// Time-stamp: <2022-09-21 18:29:02 krylon>
 
 package backend
 
@@ -102,13 +102,10 @@ func (d *Daemon) findPeers() {
 } // func (d *Daemon) findPeers()
 
 func (d *Daemon) processServiceEntries(queue <-chan *zeroconf.ServiceEntry) {
-	defer d.log.Println("[INFO] DNS-SD Listener is quitting.")
 	var peerPat = regexp.MustCompile(fmt.Sprintf("%s\\\\@(\\w+)", common.AppName))
 
 	for entry := range queue {
 		var str = rrStr(entry)
-		// d.log.Printf("[DEBUG] Received one ServiceEntry: %s\n",
-		// 	str)
 
 		if strings.HasPrefix(entry.HostName, d.hostname) {
 			continue
@@ -118,11 +115,9 @@ func (d *Daemon) processServiceEntries(queue <-chan *zeroconf.ServiceEntry) {
 
 		entry.TTL = srvTTL
 
-		// d.log.Println("[TRACE] Acquire pLock")
 		d.pLock.Lock()
 		d.peers[str] = mkService(entry)
 		d.pLock.Unlock()
-		// d.log.Println("[TRACE] Released pLock")
 	}
 } // func (d *Daemon) processServiceEntries(queue <- chan *zeroconf.ServiceEntry)
 

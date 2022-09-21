@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-10 16:16:36 krylon>
+// Time-stamp: <2022-09-21 19:40:22 krylon>
 
 package backend
 
@@ -137,9 +137,9 @@ func (d *Daemon) handleReminderGetPending(w http.ResponseWriter, r *http.Request
 } // func (d *Daemon) handleReminderGetPending(w http.ResponseWriter, r *http.Request)
 
 func (d *Daemon) handleReminderGetAll(w http.ResponseWriter, r *http.Request) {
-	d.log.Printf("[TRACE] Handle %s from %s\n",
-		r.URL,
-		r.RemoteAddr)
+	// d.log.Printf("[TRACE] Handle %s from %s\n",
+	// 	r.URL,
+	// 	r.RemoteAddr)
 
 	var (
 		err       error
