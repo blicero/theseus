@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-19 18:57:28 krylon>
+// Time-stamp: <2022-09-21 18:58:14 krylon>
 
 package database
 
@@ -134,6 +134,7 @@ WHERE id = ?
 	query.NotificationAdd: `
 INSERT INTO notification (reminder_id, timestamp)
                   VALUES (          ?,         ?)
+ON CONFLICT DO NOTHING
 `,
 	query.NotificationDisplay: `
 UPDATE notification

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-20 16:36:11 krylon>
+// Time-stamp: <2022-09-21 18:33:01 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -775,7 +775,7 @@ EXEC_QUERY:
 			r.Recur.Days[i] = (days & (1 << i)) != 0
 		}
 
-		if r.DueNext(&now).Before(t) {
+		if r.Recur.Repeat != objects.Once || r.DueNext(&now).Before(t) {
 			items = append(items, r)
 		}
 	}

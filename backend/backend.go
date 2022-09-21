@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-20 16:46:16 krylon>
+// Time-stamp: <2022-09-21 19:34:09 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -321,6 +321,10 @@ func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 	head, body = r.Payload()
 	due = r.DueNext(nil)
 
+	d.log.Printf("[DEBUG] Check pending Notifications for Reminder %d (%q)\n",
+		r.ID,
+		r.Title)
+
 	db = d.pool.Get()
 	defer d.pool.Put(db)
 
@@ -332,10 +336,14 @@ func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 		return err
 	}
 
+	d.log.Printf("[DEBUG] Found %d pending Notifications for Reminder %d\n",
+		len(pending),
+		r.ID)
+
 	var found bool
 
 	for _, n := range pending {
-		if n.Timestamp.Equal(due) {
+		if n.Timestamp.Truncate(time.Minute).Equal(due) {
 			found = true
 			break
 		}
@@ -343,6 +351,10 @@ func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 
 	if !found {
 		var n *objects.Notification
+
+		d.log.Printf("[DEBUG] Adding Notification for Reminder %d at %s\n",
+			r.ID,
+			due.Format(common.TimestampFormat))
 
 		if n, err = db.NotificationAdd(r, due); err != nil {
 			d.log.Printf("[ERROR] Cannot add Notification for Reminder %d at %s: %s\n",
@@ -355,9 +367,68 @@ func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 		pending = append(pending, *n)
 	}
 
+	due = r.DuePrev(nil)
+
+	d.log.Printf("[DEBUG] Looking for most recent Notification for Reminder %d at %s\n",
+		r.ID,
+		due.Format(common.TimestampFormat))
+
+	for _, n := range pending {
+		if n.Timestamp.Truncate(time.Minute).Equal(due) {
+			d.log.Printf("[DEBUG] Found Notification for Reminder %d at %s: %d\n",
+				r.ID,
+				due.Format(common.TimestampFormat),
+				n.ID)
+			found = true
+			break
+		}
+	}
+
+	// If we don't find a pending Notification for the most recent
+	// Recurrence, *maybe* we should check if there is an *acknowledged*
+	// Notification before trying to display one?
+	if !found {
+		var n *objects.Notification
+
+		if n, err = db.NotificationGetByReminderStamp(r, due); err != nil {
+			d.log.Printf("[ERROR] Cannot look up Notification for Reminder %d at %s: %s\n",
+				r.ID,
+				due.Format(common.TimestampFormat),
+				err.Error())
+			return err
+		} else if n != nil && n.Acknowledged.After(common.Epoch) {
+			d.log.Printf("[DEBUG] Found acknowledged Notification for Reminder %d at %s: Acknowledged at %s\n",
+				r.ID,
+				due.Format(common.TimestampFormat),
+				n.Acknowledged.Format(common.TimestampFormat))
+			goto LETS_GO
+		} else if n, err = db.NotificationAdd(r, due); err != nil {
+			d.log.Printf("[ERROR] Cannot add Notification for Reminder %d at %s: %s\n",
+				r.ID,
+				due.Format(common.TimestampFormat),
+				err.Error())
+			return err
+		}
+
+		d.log.Printf("[DEBUG] Added Notification for Reminder %d at %s: %d\n",
+			r.ID,
+			due.Format(common.TimestampFormat),
+			n.ID)
+		pending = append(pending, *n)
+	}
+
+LETS_GO:
 	now = time.Now().Truncate(time.Minute)
 
 	for _, n := range pending {
+		if n.Timestamp.After(now.Add(queueTimeout)) {
+			continue
+		}
+
+		var msg = fmt.Sprintf("%s -- %s",
+			n.Timestamp.Format(common.TimestampFormatMinute),
+			body)
+
 		var res = obj.Call(
 			notifyMethod,
 			0,
@@ -365,7 +436,7 @@ func (d *Daemon) notify(r *objects.Reminder, timeout int32) error {
 			uint32(0),
 			"",
 			head,
-			body,
+			msg,
 			[]string{
 				"OK",
 				"OK",
