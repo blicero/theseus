@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-21 19:34:09 krylon>
+// Time-stamp: <2022-09-22 18:36:52 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -26,6 +26,7 @@ import (
 	"github.com/blicero/theseus/database"
 	"github.com/blicero/theseus/logdomain"
 	"github.com/blicero/theseus/objects"
+	"github.com/blicero/theseus/objects/repeat"
 	"github.com/godbus/dbus/v5"
 	"github.com/gorilla/mux"
 	"github.com/grandcat/zeroconf"
@@ -524,7 +525,7 @@ func (d *Daemon) finishNotification(notID uint32) error {
 		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
 			rid)
 		return nil
-	} else if rem.Recur.Repeat != objects.Once {
+	} else if rem.Recur.Repeat != repeat.Once {
 		d.log.Printf("[DEBUG] Reminder %d (%q) is recurring (%s)\n",
 			rem.ID,
 			rem.Title,
@@ -604,7 +605,7 @@ func (d *Daemon) delayNotification(nID uint32) error {
 		d.log.Printf("[DEBUG] Reminder #%d was not found in database.\n",
 			not.ReminderID)
 		return nil
-	} else if rem.Recur.Repeat != objects.Once {
+	} else if rem.Recur.Repeat != repeat.Once {
 		// What does it mean to delay a Reminder that is set to go off
 		// regularly? We need to to post the notification again in a
 		// few minutes, but without touching the database record.

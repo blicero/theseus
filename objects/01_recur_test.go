@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 14. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-20 16:36:14 krylon>
+// Time-stamp: <2022-09-22 18:31:51 krylon>
 
 package objects
 
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/blicero/theseus/common"
+	"github.com/blicero/theseus/objects/repeat"
 )
 
 func TestDue(t *testing.T) {
@@ -31,8 +32,8 @@ func TestDue(t *testing.T) {
 			r: Reminder{
 				Title:     "Test01",
 				Timestamp: zero.Add(time.Hour * 14),
-				Recur: Alarmclock{
-					Repeat: Daily,
+				Recur: Recurrence{
+					Repeat: repeat.Daily,
 				},
 			},
 			ref:       today,
@@ -42,8 +43,8 @@ func TestDue(t *testing.T) {
 			r: Reminder{
 				Title:     "Test02",
 				Timestamp: zero.Add(time.Second * 27000), // 07:30
-				Recur: Alarmclock{
-					Repeat: Custom,
+				Recur: Recurrence{
+					Repeat: repeat.Custom,
 					Days: Weekdays{
 						false,
 						true,
@@ -62,8 +63,8 @@ func TestDue(t *testing.T) {
 			r: Reminder{
 				Title:     "Test03",
 				Timestamp: now.Add(time.Hour * 24),
-				Recur: Alarmclock{
-					Repeat: Once,
+				Recur: Recurrence{
+					Repeat: repeat.Once,
 				},
 			},
 			ref:       today,
@@ -73,8 +74,8 @@ func TestDue(t *testing.T) {
 			r: Reminder{
 				Title:     "Test04",
 				Timestamp: zero.Add(time.Hour * 8),
-				Recur: Alarmclock{
-					Repeat: Custom,
+				Recur: Recurrence{
+					Repeat: repeat.Custom,
 					Days: Weekdays{
 						true,
 						true,

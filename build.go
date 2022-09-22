@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 02. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-08-15 20:29:22 krylon>
+// Time-stamp: <2022-09-22 18:25:36 krylon>
 
 // +build ignore
 
@@ -60,6 +60,7 @@ var candidates = map[string][]string{
 		"logdomain",
 		"database/query",
 		"objects",
+		"objects/repeat",
 	},
 	"test": []string{
 		"backend",
@@ -73,6 +74,7 @@ var candidates = map[string][]string{
 		"database/query",
 		"logdomain",
 		"objects",
+		"objects/repeat",
 		"ui",
 		"clients/clientlib",
 	},
@@ -83,6 +85,7 @@ var candidates = map[string][]string{
 		"database/query",
 		"logdomain",
 		"objects",
+		"objects/repeat",
 		"ui",
 		"clients/clientlib",
 	},

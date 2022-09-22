@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-16 18:57:39 krylon>
+// Time-stamp: <2022-09-22 18:40:40 krylon>
 
 package ui
 
@@ -13,6 +13,7 @@ import (
 	"math"
 
 	"github.com/blicero/theseus/objects"
+	"github.com/blicero/theseus/objects/repeat"
 	"github.com/gotk3/gotk3/gtk"
 )
 
@@ -32,7 +33,7 @@ var dayName = [7]string{
 // try to create something reusable.
 type RecurEditor struct {
 	log                        *log.Logger
-	rec                        *objects.Alarmclock
+	rec                        *objects.Recurrence
 	box                        *gtk.Box
 	oBox, tBox, cntBox, dayBox *gtk.Box
 	rtCombo                    *gtk.ComboBoxText
@@ -42,7 +43,7 @@ type RecurEditor struct {
 }
 
 // NewRecurEditor creates and returns a fresh Editor for Recurrences.
-func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) {
+func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) {
 	var (
 		err error
 		e   = &RecurEditor{
@@ -52,7 +53,7 @@ func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) 
 	)
 
 	if r == nil {
-		e.rec = new(objects.Alarmclock)
+		e.rec = new(objects.Recurrence)
 	} else {
 		e.rec = r
 	}
@@ -95,9 +96,9 @@ func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) 
 		return nil, err
 	}
 
-	e.rtCombo.AppendText(objects.Once.String())
-	e.rtCombo.AppendText(objects.Daily.String())
-	e.rtCombo.AppendText(objects.Custom.String())
+	e.rtCombo.AppendText(repeat.Once.String())
+	e.rtCombo.AppendText(repeat.Daily.String())
+	e.rtCombo.AppendText(repeat.Custom.String())
 
 	for i := range e.weekdays {
 		if e.weekdays[i], err = gtk.CheckButtonNewWithLabel(dayName[i]); err != nil {
@@ -128,14 +129,14 @@ func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) 
 	var min, hour int
 
 	switch e.rec.Repeat {
-	case objects.Once:
+	case repeat.Once:
 		// Nothing to do here, move along
-	case objects.Custom:
+	case repeat.Custom:
 		for i, f := range e.rec.Days {
 			e.weekdays[i].SetActive(f)
 		}
 		fallthrough
-	case objects.Daily:
+	case repeat.Daily:
 		hour = e.rec.Offset / 3600
 		min = (e.rec.Offset % 3600) / 60
 
@@ -151,21 +152,21 @@ func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error) 
 
 func (e *RecurEditor) handleTypeChange() {
 	switch txt := e.rtCombo.GetActiveText(); txt {
-	case objects.Once.String():
+	case repeat.Once.String():
 		e.cntBox.Hide()
 		e.dayBox.Hide()
 		e.offMin.SetSensitive(false)
 		e.offHour.SetSensitive(false)
 		// e.offMin.SetProperty("editable", false)
 		// e.offHour.SetProperty("editable", false)
-	case objects.Daily.String():
+	case repeat.Daily.String():
 		e.cntBox.ShowAll()
 		e.dayBox.Hide()
 		e.offMin.SetSensitive(true)
 		e.offHour.SetSensitive(true)
 		// e.offMin.SetProperty("editable", true)
 		// e.offHour.SetProperty("editable", true)
-	case objects.Custom.String():
+	case repeat.Custom.String():
 		e.cntBox.ShowAll()
 		e.dayBox.ShowAll()
 		e.offMin.SetSensitive(true)
@@ -178,14 +179,14 @@ func (e *RecurEditor) handleTypeChange() {
 	}
 }
 
-func (e *RecurEditor) GetRecurrence() objects.Alarmclock {
+func (e *RecurEditor) GetRecurrence() objects.Recurrence {
 	switch txt := e.rtCombo.GetActiveText(); txt {
-	case objects.Once.String():
-		e.rec.Repeat = objects.Once
-	case objects.Daily.String():
-		e.rec.Repeat = objects.Daily
-	case objects.Custom.String():
-		e.rec.Repeat = objects.Custom
+	case repeat.Once.String():
+		e.rec.Repeat = repeat.Once
+	case repeat.Daily.String():
+		e.rec.Repeat = repeat.Daily
+	case repeat.Custom.String():
+		e.rec.Repeat = repeat.Custom
 	default:
 		var msg = fmt.Sprintf("%q is not a valid recurrence type!",
 			txt)

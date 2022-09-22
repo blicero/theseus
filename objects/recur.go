@@ -2,9 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-14 20:28:06 krylon>
-
-//go:generate stringer -type=Recurrence
+// Time-stamp: <2022-09-22 18:57:13 krylon>
 
 //go:generate ffjson recur.go
 
@@ -14,19 +12,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-)
 
-// Recurrence describes how a Reminder get triggered repeatedly and regularly.
-type Recurrence uint8
-
-// Once means a Reminder goes off only once.
-// Daily means it is repeated every day.
-// Custom means that the user specifies on which weekdays the Reminder should
-// go off (e.g. "only on workdays", or "only on weekends")
-const (
-	Once Recurrence = iota
-	Daily
-	Custom
+	"github.com/blicero/theseus/objects/repeat"
 )
 
 // Weekdays is a list of weekdays that a recurring Reminder can be set
@@ -67,19 +54,13 @@ func (w *Weekdays) On(d time.Weekday) bool {
 	return w[(d+6)%7]
 } // func (w *Weekdays) On(d time.Weekday) bool
 
-// Alarmclock specifies a potentially recurring point in time
+// Recurrence specifies a potentially recurring point in time
 // as an offset into the day (in seconds) and a Recurrence to
 // specify how the event will repeat.
-//
-// FIXME: The name is really dumb.
-//        In fact, most of the naming surrounding
-//        recurring Reminders is very bad.
-//        Also, this type doesn't really need a UUID
-//        any more.
-type Alarmclock struct {
+type Recurrence struct {
 	ID      int64
 	Offset  int
-	Repeat  Recurrence
+	Repeat  repeat.Repeat
 	Days    Weekdays
 	Limit   int
 	Counter int
@@ -94,7 +75,7 @@ type Alarmclock struct {
 
 // Weekdays returns a uint8 with the bitwise map of the days of the week
 // when a Recurrence occurs.
-func (a *Alarmclock) Weekdays() uint8 {
+func (a *Recurrence) Weekdays() uint8 {
 	return a.Days.Bitfield()
 } // func (a *Alarmclock) Weekdays() uint8
 
@@ -108,7 +89,7 @@ var wDayStr = []string{
 	"So",
 }
 
-func (a *Alarmclock) String() string {
+func (a *Recurrence) String() string {
 	var (
 		offset, str string
 	)
@@ -120,13 +101,13 @@ func (a *Alarmclock) String() string {
 	offset = fmtOffset(a.Offset)
 
 	switch a.Repeat {
-	case Once:
+	case repeat.Once:
 		fallthrough
-	case Daily:
+	case repeat.Daily:
 		str = fmt.Sprintf("%s(%s)",
 			a.Repeat,
 			offset)
-	case Custom:
+	case repeat.Custom:
 		var days = make([]string, 0, 7)
 
 		for idx, v := range a.Days {

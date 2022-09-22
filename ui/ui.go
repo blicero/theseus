@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-21 19:40:44 krylon>
+// Time-stamp: <2022-09-22 18:51:14 krylon>
 
 package ui
 
@@ -26,6 +26,7 @@ import (
 	"github.com/blicero/theseus/common"
 	"github.com/blicero/theseus/logdomain"
 	"github.com/blicero/theseus/objects"
+	"github.com/blicero/theseus/objects/repeat"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -787,13 +788,13 @@ func (g *GUI) reminderAdd() {
 	recEdit.rtCombo.Connect("changed",
 		func() {
 			switch txt := recEdit.rtCombo.GetActiveText(); txt {
-			case objects.Once.String():
+			case repeat.Once.String():
 				cal.SetSensitive(true)
 				hourInput.SetSensitive(true)
 				minuteInput.SetSensitive(true)
-			case objects.Daily.String():
+			case repeat.Daily.String():
 				fallthrough
-			case objects.Custom.String():
+			case repeat.Custom.String():
 				cal.SetSensitive(false)
 				hourInput.SetSensitive(false)
 				minuteInput.SetSensitive(false)
@@ -858,7 +859,7 @@ BEGIN:
 
 	r.Recur = recEdit.GetRecurrence()
 
-	if r.Recur.Repeat == objects.Once {
+	if r.Recur.Repeat == repeat.Once {
 		var (
 			year, month, day uint
 			hour, min        int
@@ -886,7 +887,7 @@ BEGIN:
 	g.log.Printf("[DEBUG] Reminder: %#v\n",
 		&r)
 
-	if r.Recur.Repeat == objects.Once && r.Timestamp.Before(time.Now()) {
+	if r.Recur.Repeat == repeat.Once && r.Timestamp.Before(time.Now()) {
 		msg = fmt.Sprintf("The time you selected is in the past: %s",
 			r.Timestamp.Format(common.TimestampFormat))
 		g.displayMsg(msg)
@@ -1140,13 +1141,13 @@ func (g *GUI) reminderEdit() {
 	recEdit.rtCombo.Connect("changed",
 		func() {
 			switch txt := recEdit.rtCombo.GetActiveText(); txt {
-			case objects.Once.String():
+			case repeat.Once.String():
 				cal.SetSensitive(true)
 				hourInput.SetSensitive(true)
 				minuteInput.SetSensitive(true)
-			case objects.Daily.String():
+			case repeat.Daily.String():
 				fallthrough
-			case objects.Custom.String():
+			case repeat.Custom.String():
 				cal.SetSensitive(false)
 				hourInput.SetSensitive(false)
 				minuteInput.SetSensitive(false)
@@ -1158,7 +1159,7 @@ func (g *GUI) reminderEdit() {
 	dlg.ShowAll()
 
 BEGIN:
-	if r.Recur.Repeat == objects.Once {
+	if r.Recur.Repeat == repeat.Once {
 		cal.SelectMonth(uint(r.Timestamp.Month())-1, uint(r.Timestamp.Year()))
 		cal.SelectDay(uint(r.Timestamp.Day()))
 
@@ -1206,7 +1207,7 @@ BEGIN:
 	hour = hourInput.GetValueAsInt()
 	min = minuteInput.GetValueAsInt()
 
-	if r.Recur.Repeat == objects.Once {
+	if r.Recur.Repeat == repeat.Once {
 		r.Timestamp = time.Date(
 			int(year),
 			time.Month(month+1),
@@ -1227,7 +1228,7 @@ BEGIN:
 	g.log.Printf("[DEBUG] Reminder: %#v\n",
 		&r)
 
-	if r.Recur.Repeat == objects.Once && r.Timestamp.Before(time.Now()) {
+	if r.Recur.Repeat == repeat.Once && r.Timestamp.Before(time.Now()) {
 		var msg = fmt.Sprintf("The time you selected is in the past: %s",
 			r.Timestamp.Format(common.TimestampFormat))
 		g.displayMsg(msg)

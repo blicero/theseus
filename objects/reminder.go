@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-21 18:47:08 krylon>
+// Time-stamp: <2022-09-22 18:28:49 krylon>
 
 package objects
 
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/blicero/theseus/common"
+	"github.com/blicero/theseus/objects/repeat"
 )
 
 //go:generate ffjson reminder.go
@@ -21,7 +22,7 @@ type Reminder struct {
 	Title       string
 	Description string
 	Timestamp   time.Time
-	Recur       Alarmclock
+	Recur       Recurrence
 	Finished    bool
 	UUID        string
 	Changed     time.Time
@@ -49,9 +50,9 @@ func (r *Reminder) DueNext(ref *time.Time) (d time.Time) {
 	}
 
 	switch r.Recur.Repeat {
-	case Once:
+	case repeat.Once:
 		t1 = r.Timestamp
-	case Daily:
+	case repeat.Daily:
 		var stamp = r.Timestamp.Unix()
 
 		if stamp < (now.Unix() % 86400) {
@@ -59,7 +60,7 @@ func (r *Reminder) DueNext(ref *time.Time) (d time.Time) {
 		} else {
 			t1 = now.Truncate(time.Second * 86400).Add(time.Second * time.Duration(stamp))
 		}
-	case Custom:
+	case repeat.Custom:
 		var (
 			offset = r.Timestamp.Unix()
 			due    = now.Truncate(time.Hour * 24).Add(time.Duration(offset) * time.Second)
@@ -112,9 +113,9 @@ func (r *Reminder) DuePrev(ref *time.Time) (d time.Time) {
 	}
 
 	switch r.Recur.Repeat {
-	case Once:
+	case repeat.Once:
 		t1 = r.Timestamp
-	case Daily:
+	case repeat.Daily:
 		var stamp = r.Timestamp.Unix()
 
 		if stamp > (now.Unix() % 86400) {
@@ -122,7 +123,7 @@ func (r *Reminder) DuePrev(ref *time.Time) (d time.Time) {
 		} else {
 			t1 = now.Truncate(time.Second * 86400).Add(time.Second * time.Duration(stamp))
 		}
-	case Custom:
+	case repeat.Custom:
 		var (
 			offset = r.Timestamp.Unix()
 			due    = now.Truncate(time.Hour * 24).Add(time.Duration(offset) * time.Second)
