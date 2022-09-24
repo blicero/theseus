@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-22 18:10:01 krylon>
+# Time-stamp: <2022-09-24 17:12:20 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,12 +10,12 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-22 Do 17:54]
+  #+CAPTION: Clock summary at [2022-09-24 Sa 17:12]
   | Headline                                       | Time      |            |          |          |       |
   |------------------------------------------------+-----------+------------+----------+----------+-------|
-  | *Total time*                                   | *9d 3:16* |            |          |          |       |
+  | *Total time*                                   | *9d 7:10* |            |          |          |       |
   |------------------------------------------------+-----------+------------+----------+----------+-------|
-  | *Theseus [17/24]*                              | *9d 3:16* |            |          |          |       |
+  | *Theseus [17/24]*                              | *9d 7:10* |            |          |          |       |
   | \_  /Components [15/20]/                       |           | /8d 21:18/ |          |          |       |
   | \_    Recurring Reminders [4/4]                |           |            | 1d 21:44 |          |       |
   | \_      Database schema                        |           |            |          |     1:36 |       |
@@ -41,7 +41,7 @@
   | \_    Other sources [0/2]                      |           |            |  2d 2:29 |          |       |
   | \_      Framework?                             |           |            |          |     3:11 |       |
   | \_      logreader                              |           |            |          | 1d 23:18 |       |
-  | \_  /Cleanup/                                  |           | /1:28/     |          |          |       |
+  | \_  /Cleanup/                                  |           | /5:22/     |          |          |       |
   | \_  /Testing [0/0]/                            |           | /1:30/     |          |          |       |
   | \_    Database                                 |           |            |     1:30 |          |       |
   | \_  /Bugs [3/3]/                               |           | /3:00/     |          |          |       |
@@ -409,12 +409,16 @@
      This should keep me busy for a while, too, I think, ... right?
 ** Cleanup                                               :internals:refactor:
    :LOGBOOK:
+   CLOCK: [2022-09-22 Do 18:18]--[2022-09-22 Do 22:12] =>  3:54
    CLOCK: [2022-07-23 Sa 21:57]--[2022-07-23 Sa 22:11] =>  0:14
    CLOCK: [2022-07-22 Fr 21:27]--[2022-07-22 Fr 21:30] =>  0:03
    CLOCK: [2022-07-22 Fr 21:11]--[2022-07-22 Fr 21:20] =>  0:09
    CLOCK: [2022-07-22 Fr 18:35]--[2022-07-22 Fr 19:23] =>  0:48
    CLOCK: [2022-07-22 Fr 18:21]--[2022-07-22 Fr 18:35] =>  0:14
    :END:
+*** [2022-09-22 Do 18:16]
+    Now that the networking part and recurring Reminders seem to work more or
+    less, I think I should take a "break" and clean up some more code.
 ** Testing [0/0]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
