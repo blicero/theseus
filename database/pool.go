@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 13. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-07-01 20:55:18 krylon>
+// Time-stamp: <2022-09-24 17:06:19 krylon>
 
 package database
 
@@ -21,12 +21,15 @@ type dblink struct {
 }
 
 // Pool is a pool of database connections
+//
+// *Maybe* I should make this a "singleton"?
 type Pool struct {
-	cnt   int
-	log   *log.Logger
-	link  *dblink
-	lock  sync.RWMutex
-	empty *sync.Cond
+	cnt     int
+	initCnt int
+	log     *log.Logger
+	link    *dblink
+	lock    sync.RWMutex
+	empty   *sync.Cond
 }
 
 // NewPool creates a Pool of database connections.
@@ -35,7 +38,10 @@ type Pool struct {
 func NewPool(cnt int) (*Pool, error) {
 	var (
 		err  error
-		pool = &Pool{cnt: cnt}
+		pool = &Pool{
+			cnt:     cnt,
+			initCnt: cnt,
+		}
 	)
 
 	pool.empty = sync.NewCond(&pool.lock)
@@ -88,6 +94,10 @@ func (pool *Pool) Get() *Database {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 
+	if common.Debug && pool.cnt < pool.initCnt {
+		pool.log.Printf("[DEBUG] Pool holds %d connections\n", pool.cnt)
+	}
+
 WAIT_FOR_LINK:
 	if pool.link != nil {
 		link = pool.link
@@ -111,6 +121,10 @@ func (pool *Pool) GetNoWait() (*Database, error) {
 
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
+
+	if common.Debug && pool.cnt < pool.initCnt {
+		pool.log.Printf("[DEBUG] Pool holds %d connections\n", pool.cnt)
+	}
 
 	if pool.link != nil {
 		link := pool.link
