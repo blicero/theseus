@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-22 18:57:13 krylon>
+// Time-stamp: <2022-09-23 10:20:34 krylon>
 
 //go:generate ffjson recur.go
 
@@ -35,6 +35,17 @@ func (w *Weekdays) Bitfield() uint8 {
 
 	return days
 }
+
+func (w Weekdays) String() string {
+	var days = make([]string, 0, len(w))
+	for i, b := range w {
+		if b {
+			days = append(days, wDayStr[i])
+		}
+	}
+
+	return strings.Join(days, ",")
+} // func (w *Weekdays) String() string
 
 // Count returns the number of weekdays the Reminder is set to go off.
 func (w *Weekdays) Count() int {

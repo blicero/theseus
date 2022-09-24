@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-22 18:36:52 krylon>
+// Time-stamp: <2022-09-23 10:08:52 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -513,7 +513,7 @@ func (d *Daemon) finishNotification(notID uint32) error {
 
 		return err
 	} else if not == nil {
-		d.log.Printf("[ERROR] Could not find Notification %d in database\n",
+		d.log.Printf("[CANTHAPPEN] Could not find Notification %d in database\n",
 			nid)
 		return nil
 	} else if rem, err = db.ReminderGetByID(not.ReminderID); err != nil {
@@ -656,8 +656,8 @@ func (d *Daemon) dbLoop() {
 } // func (d *Daemon) dbLoop()
 
 // dbCheck does the actual interaction with the database for dbLoop.
-// We does this in a separate method so we can use defer to put the
-// database connection back to the pool.
+// We do this in a separate method so we can use defer to return the
+// database connection to the pool.
 func (d *Daemon) dbCheck() error {
 	var (
 		err       error
@@ -711,9 +711,15 @@ func (d *Daemon) reminderMerge(remote []objects.Reminder) error {
 
 	defer func() {
 		if txStatus {
-			db.Commit() // nolint: errcheck
+			if err = db.Commit(); err != nil {
+				d.log.Printf("[ERROR] Failed to commit database transaction after successful merge:\n\t%s\n",
+					err.Error())
+			}
 		} else {
-			db.Rollback() // nolint: errcheck
+			if err = db.Rollback(); err != nil {
+				d.log.Printf("[ERROR] Cannot roll back transaction after failed merge:\n\t%s\n",
+					err.Error())
+			}
 		}
 	}()
 
@@ -730,6 +736,8 @@ func (d *Daemon) reminderMerge(remote []objects.Reminder) error {
 		idmap[rem.UUID] = idx
 	}
 
+	// Donnerstag, 22. 09. 2022, 19:52 -- I have not looked at this code since I introduced recurring Reminders.
+	// The added fields are not taken into consideration at all...
 	for _, remR := range remote {
 		var (
 			lidx  int
@@ -807,6 +815,37 @@ func (d *Daemon) reminderMerge(remote []objects.Reminder) error {
 						err.Error())
 					d.log.Printf("[ERROR] %s\n", errmsg)
 					return errors.New(errmsg)
+				}
+			}
+
+			// I just learned that in Go, comparing structs for
+			// equality is a-okay and works just about as one
+			// would expect.
+			if remL.Recur != remR.Recur {
+				if remL.Recur.Repeat != remR.Recur.Repeat {
+					if err = db.ReminderSetRepeat(&remL, remR.Recur.Repeat); err != nil {
+						errmsg = fmt.Sprintf("Cannot set repeat mode for Reminder %d from %s to %s: %s",
+							remL.ID,
+							remL.Recur.Repeat,
+							remR.Recur.Repeat,
+							err.Error())
+						d.log.Printf("[ERROR] %s\n",
+							errmsg)
+						return errors.New(errmsg)
+					}
+				}
+
+				if remL.Recur.Days != remR.Recur.Days {
+					if err = db.ReminderSetWeekdays(&remL, remR.Recur.Days); err != nil {
+						errmsg = fmt.Sprintf("Cannot set Weekdays for Reminder %d from %s to %s: %s",
+							remL.ID,
+							remL.Recur.Days,
+							remR.Recur.Days,
+							err.Error())
+						d.log.Printf("[ERROR] %s\n",
+							errmsg)
+						return errors.New(errmsg)
+					}
 				}
 			}
 
