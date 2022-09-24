@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-22 18:40:40 krylon>
+// Time-stamp: <2022-09-24 20:02:56 krylon>
 
 package ui
 
@@ -157,22 +157,16 @@ func (e *RecurEditor) handleTypeChange() {
 		e.dayBox.Hide()
 		e.offMin.SetSensitive(false)
 		e.offHour.SetSensitive(false)
-		// e.offMin.SetProperty("editable", false)
-		// e.offHour.SetProperty("editable", false)
 	case repeat.Daily.String():
 		e.cntBox.ShowAll()
 		e.dayBox.Hide()
 		e.offMin.SetSensitive(true)
 		e.offHour.SetSensitive(true)
-		// e.offMin.SetProperty("editable", true)
-		// e.offHour.SetProperty("editable", true)
 	case repeat.Custom.String():
 		e.cntBox.ShowAll()
 		e.dayBox.ShowAll()
 		e.offMin.SetSensitive(true)
 		e.offHour.SetSensitive(true)
-		// e.offMin.SetProperty("editable", true)
-		// e.offHour.SetProperty("editable", true)
 	default:
 		e.log.Printf("[CANTHAPPEN] %q is not a valid recurrence type!\n",
 			txt)

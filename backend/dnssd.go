@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 24. 08. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-21 18:29:02 krylon>
+// Time-stamp: <2022-09-24 20:41:00 krylon>
 
 package backend
 
@@ -29,7 +29,7 @@ var (
 	addrPat = regexp.MustCompile(`:(\d+)$`)
 )
 
-func (d *Daemon) initDNSSd() error {
+func (d *Daemon) initDnsSd() error {
 	var (
 		err   error
 		match []string
@@ -46,6 +46,12 @@ func (d *Daemon) initDNSSd() error {
 		return err
 	}
 
+	// FIXME
+	// I copied this blindly from the example code without knowing
+	// what it means or if it even has any significance at all.
+	// For the time being, I do not have reliable Internet access,
+	// so I cannot do any research on the matter.
+	// But I suspect this is equivalent to "bla bla bla".
 	var txt = []string{"txtv=0", "lo=1", "la=2"}
 
 	var instanceName = fmt.Sprintf("%s@%s",
@@ -58,7 +64,9 @@ func (d *Daemon) initDNSSd() error {
 		return err
 	}
 
-	// Unfortunately, this triggers a race condition
+	// Unfortunately, this triggers a race condition.
+	// Being offline currently, I cannot check if the developers have
+	// caught and fixed this.
 	// srv.TTL(srvTTL)
 
 	d.dnssd = srv
@@ -87,7 +95,6 @@ func (d *Daemon) findPeers() {
 		go d.processServiceEntries(entries)
 
 		ctx, cancel := context.WithCancel(context.Background())
-		// defer cancel()
 
 		if err = resolver.Browse(ctx, srvService, srvDomain, entries); err != nil {
 			d.log.Printf("{ERROR] Failed to browse for %s: %s\n",
@@ -107,6 +114,8 @@ func (d *Daemon) processServiceEntries(queue <-chan *zeroconf.ServiceEntry) {
 	for entry := range queue {
 		var str = rrStr(entry)
 
+		// If the entry refers to yours truly, we skip it,
+		// because we don't want to synchronize with ourselves.
 		if strings.HasPrefix(entry.HostName, d.hostname) {
 			continue
 		} else if !peerPat.MatchString(entry.Instance) {

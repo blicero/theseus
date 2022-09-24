@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-22 18:51:14 krylon>
+// Time-stamp: <2022-09-24 19:49:24 krylon>
 
 package ui
 
@@ -123,7 +123,7 @@ var gtkInit sync.Once
 type GUI struct {
 	srv          string
 	log          *log.Logger
-	lock         sync.RWMutex // nolint: unused,structcheck
+	lock         sync.RWMutex
 	spawnCnt     int
 	win          *gtk.Window
 	mainBox      *gtk.Box
@@ -194,7 +194,6 @@ func Create(srv string) (*GUI, error) {
 		win.log.Printf("[ERROR] Cannot create TreeStore: %s\n",
 			err.Error())
 		return nil, err
-		//} else if win.filter, err = win.store.FilterNew(
 	} else if win.view, err = gtk.TreeViewNewWithModel(win.store); err != nil {
 		win.log.Printf("[ERROR] Cannot create TreeView: %s\n",
 			err.Error())
@@ -328,7 +327,7 @@ func (g *GUI) initMenu() error {
 		g.log.Printf("[ERROR] Cannot create menu item HIDE_FINISHED: %s\n",
 			err.Error())
 		return err
-	} else if syncItem, err = gtk.MenuItemNewWithMnemonic("S_ynchronize"); err != nil {
+	} else if syncItem, err = gtk.MenuItemNewWithMnemonic("_Synchronize"); err != nil {
 		g.log.Printf("[ERROR] Cannot create menu item SYNC: %s\n",
 			err.Error())
 	}
@@ -397,7 +396,7 @@ func (g *GUI) fetchReminders() (repeat bool) {
 		repeat = true
 	}()
 
-	krylib.Trace()
+	// krylib.Trace()
 
 	rawURL = fmt.Sprintf("http://%s%s",
 		g.srv,
@@ -499,6 +498,9 @@ func (g *GUI) fetchReminders() (repeat bool) {
 		}
 	}
 
+	// After we updated the TreeModel with new/updated Reminders, we
+	// traverse the Model again to see if any Reminder have been deleted
+	// and remove those from the Model.
 	for iter, _ := g.store.GetIterFirst(); g.store.IterNext(iter); {
 		var (
 			val  *glib.Value
@@ -848,7 +850,6 @@ BEGIN:
 		return
 	case gtk.RESPONSE_OK:
 		// 's ist los, Hund?
-		g.log.Println("[TRACE] Input was successful")
 	default:
 		g.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
 			res)
@@ -945,34 +946,16 @@ BEGIN:
 		return
 	}
 
-	// g.log.Printf("[DEBUG] Got response from backend: %#v\n",
-	// 	response)
-
 	if response.Status {
 		glib.IdleAdd(func() bool {
 			g.fetchReminders()
 			return false
 		})
-		// var iter = g.store.Append()
-
-		// g.store.Set( // nolint: errcheck
-		// 	iter,
-		// 	[]int{0, 1, 2, 3, 4, 5, 6},
-		// 	[]any{
-		// 		r.ID,
-		// 		r.Title,
-		// 		r.DueNext(nil).Format(common.TimestampFormat),
-		// 		r.Recur.String(),
-		// 		r.Finished,
-		// 		r.UUID,
-		// 		r.Changed.Format(common.TimestampFormat),
-		// 	},
-		// )
-
-		// g.reminders[r.ID] = r
 	} else {
 		g.log.Printf("[ERROR] Failed to add Reminder to Database: %s\n",
 			response.Message)
+		g.pushMsg(response.Message)
+		g.displayMsg(response.Message)
 	}
 } // func (g *GUI) reminderAdd()
 
@@ -1136,7 +1119,7 @@ func (g *GUI) reminderEdit() {
 	// Does it make any sense, like, at all, to edit a finished
 	// Reminder and save it as "finished"?
 	// Not Really, eh?
-	finishedCB.SetActive(r.Finished)
+	finishedCB.SetActive(false)
 
 	recEdit.rtCombo.Connect("changed",
 		func() {
@@ -1191,7 +1174,6 @@ BEGIN:
 		return
 	case gtk.RESPONSE_OK:
 		// 's ist los, Hund?
-		g.log.Println("[TRACE] Input was successful")
 	default:
 		g.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
 			res)
@@ -1241,11 +1223,6 @@ BEGIN:
 		goto BEGIN
 	}
 
-	// FIXME Wouldn't it be easier to just serialize the entire
-	//       Reminder to JSON and transmit that? I've already been
-	//       bitten twice by first forgetting a field, and then
-	//       using different names for a field on both ends.
-
 	var (
 		reply    *http.Response
 		response objects.Response
@@ -1263,9 +1240,6 @@ BEGIN:
 		return
 	}
 
-	// payload["title"] = []string{r.Title}
-	// payload["body"] = []string{r.Description}
-	// payload["timestamp"] = []string{r.Timestamp.Format(time.RFC3339)}
 	payload["reminder"] = []string{string(sndBuf)}
 
 	if reply, err = g.web.PostForm(addr, payload); err != nil {
@@ -1312,6 +1286,12 @@ BEGIN:
 				cstr,
 			},
 		)
+	} else {
+		g.log.Printf("[ERROR] Failed to update Reminder %q in backend: %s\n",
+			r.Title,
+			response.Message)
+		g.pushMsg(response.Message)
+		g.displayMsg(response.Message)
 	}
 } // func (g *GUI) reminderEdit()
 
@@ -1404,6 +1384,12 @@ func (g *GUI) reminderReactivate() {
 			[]int{3, 5},
 			[]any{true, r.Changed.Format(common.TimestampFormat)},
 		)
+	} else {
+		g.log.Printf("[ERROR] Failed to reactivate Reminder %d in backend: %s\n",
+			id,
+			response.Message)
+		g.pushMsg(response.Message)
+		g.displayMsg(response.Message)
 	}
 } // func (g *GUI) reminderReactivate()
 
@@ -1501,6 +1487,12 @@ func (g *GUI) reminderDelete() {
 	if response.Status {
 		delete(g.reminders, id)
 		g.store.Remove(iter)
+	} else {
+		g.log.Printf("[ERROR] Failed to delete Reminder %q in backend: %s\n",
+			id,
+			response.Message)
+		g.pushMsg(response.Message)
+		g.displayMsg(response.Message)
 	}
 } // func (g *GUI) reminderDelete()
 
@@ -1770,10 +1762,6 @@ func (g *GUI) spawnBackend() {
 
 	g.spawnCnt++
 
-	// Maybe, instead of spawning a separate process, we
-	// can start the backend inside our process?
-	// It's not a very elegant solution, but it should
-	// work.
 	var (
 		err    error
 		daemon *backend.Daemon

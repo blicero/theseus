@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-21 19:40:22 krylon>
+// Time-stamp: <2022-09-24 20:53:48 krylon>
 
 package backend
 
@@ -103,9 +103,9 @@ SEND_RESPONSE:
 } // func (d *Daemon) handleReminderAdd(w http.ResponseWriter, r *http.Request)
 
 func (d *Daemon) handleReminderGetPending(w http.ResponseWriter, r *http.Request) {
-	d.log.Printf("[TRACE] Handle %s from %s\n",
-		r.URL,
-		r.RemoteAddr)
+	// d.log.Printf("[TRACE] Handle %s from %s\n",
+	// 	r.URL,
+	// 	r.RemoteAddr)
 
 	var (
 		err       error
@@ -325,10 +325,6 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 		goto SEND_RESPONSE
 	}
 
-	// idstr = vars["id"]
-	// tstr = r.FormValue("timestamp")
-	// titleStr = r.FormValue("title")
-	// bodyStr = r.FormValue("body")
 	jstr = r.FormValue("reminder")
 
 	if err = ffjson.Unmarshal([]byte(jstr), &remR); err != nil {
@@ -342,22 +338,6 @@ func (d *Daemon) handleReminderUpdate(w http.ResponseWriter, r *http.Request) {
 
 	db = d.pool.Get()
 	defer d.pool.Put(db)
-
-	// if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
-	// 	msg = fmt.Sprintf("Cannot parse ID %q: %s",
-	// 		idstr,
-	// 		err.Error())
-	// 	d.log.Printf("[ERROR] %s\n", msg)
-	// 	res.Message = msg
-	// 	goto SEND_RESPONSE
-	// } else if t, err = time.Parse(time.RFC3339, tstr); err != nil {
-	// 	msg = fmt.Sprintf("Cannot parse timestamp %q: %s",
-	// 		tstr,
-	// 		err.Error())
-	// 	d.log.Printf("[ERROR] %s\n", msg)
-	// 	res.Message = msg
-	// 	goto SEND_RESPONSE
-	// }
 
 	if remL, err = db.ReminderGetByID(remR.ID); err != nil {
 		msg = fmt.Sprintf("Failed to look up Reminder #%d: %s",

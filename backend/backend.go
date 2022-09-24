@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-23 10:08:52 krylon>
+// Time-stamp: <2022-09-24 20:25:10 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -163,7 +163,7 @@ func Summon(addr string) (*Daemon, error) {
 	go d.dbLoop()
 	go d.serveHTTP()
 
-	if err = d.initDNSSd(); err != nil {
+	if err = d.initDnsSd(); err != nil {
 		d.log.Printf("[ERROR] Cannot register Service with DNS-SD: %s\n",
 			err.Error())
 		return nil, err
