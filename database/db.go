@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-22 18:33:31 krylon>
+// Time-stamp: <2022-09-23 16:38:51 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -776,6 +776,8 @@ EXEC_QUERY:
 			r.Recur.Days[i] = (days & (1 << i)) != 0
 		}
 
+		r.Recur.Offset = int(stamp)
+
 		if r.Recur.Repeat != repeat.Once || r.DueNext(&now).Before(t) {
 			items = append(items, r)
 		}
@@ -843,17 +845,10 @@ EXEC_QUERY:
 
 		r.Timestamp = time.Unix(stamp, 0)
 		r.Changed = time.Unix(changed, 0)
+		r.Recur.Offset = int(stamp)
 		for i := 0; i < 7; i++ {
 			r.Recur.Days[i] = (days & (1 << i)) != 0
 		}
-
-		// if r.Recur, err = db.RecurrenceGetForReminder(&r); err != nil {
-		// 	db.log.Printf("[ERROR] Cannot get Recurrence for Reminder %q (%d): %s\n",
-		// 		r.Title,
-		// 		r.ID,
-		// 		err.Error())
-		// 	return nil, err
-		// }
 
 		items = append(items, r)
 	}
@@ -914,18 +909,11 @@ EXEC_QUERY:
 
 		r.Timestamp = time.Unix(stamp, 0)
 		r.Changed = time.Unix(changed, 0)
+		r.Recur.Offset = int(stamp)
 		for i := 0; i < 7; i++ {
 			r.Recur.Days[i] = (days & (1 << i)) != 0
 		}
 		r.Finished = true
-
-		// if r.Recur, err = db.RecurrenceGetForReminder(&r); err != nil {
-		// 	db.log.Printf("[ERROR] Cannot get Recurrence for Reminder %q (%d): %s\n",
-		// 		r.Title,
-		// 		r.ID,
-		// 		err.Error())
-		// 	return nil, err
-		// }
 
 		items = append(items, r)
 	}
@@ -986,19 +974,12 @@ EXEC_QUERY:
 		}
 
 		r.Timestamp = time.Unix(stamp, 0)
+		r.Recur.Offset = int(stamp)
 		r.Changed = time.Unix(changed, 0)
 		for i := 0; i < 7; i++ {
 			r.Recur.Days[i] = (days & (1 << i)) != 0
 		}
 		r.Finished = true
-
-		// if r.Recur, err = db.RecurrenceGetForReminder(r); err != nil {
-		// 	db.log.Printf("[ERROR] Cannot get Recurrence for Reminder %q (%d): %s\n",
-		// 		r.Title,
-		// 		r.ID,
-		// 		err.Error())
-		// 	return nil, err
-		// }
 
 		return r, nil
 	}
