@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-24 20:02:56 krylon>
+// Time-stamp: <2022-09-26 18:29:03 krylon>
 
 package ui
 
@@ -118,7 +118,7 @@ func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) 
 	e.oBox.PackStart(e.offMin, true, true, 0)
 
 	e.rtCombo.SetActive(0)
-	e.rtCombo.Connect("changed", e.handleTypeChange)
+	e.rtCombo.Connect("changed", e.handleModeChange)
 
 	e.tBox.PackStart(e.rtCombo, true, true, 0)
 	e.cntBox.PackStart(e.cntEdit, true, true, 0)
@@ -150,7 +150,7 @@ func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) 
 	return e, nil
 } // func NewRecurEditor(r *objects.Alarmclock, l *log.Logger) (*RecurEditor, error)
 
-func (e *RecurEditor) handleTypeChange() {
+func (e *RecurEditor) handleModeChange() {
 	switch txt := e.rtCombo.GetActiveText(); txt {
 	case repeat.Once.String():
 		e.cntBox.Hide()
@@ -171,7 +171,7 @@ func (e *RecurEditor) handleTypeChange() {
 		e.log.Printf("[CANTHAPPEN] %q is not a valid recurrence type!\n",
 			txt)
 	}
-}
+} // func (e *RecurEditor) handleModeChange()
 
 func (e *RecurEditor) GetRecurrence() objects.Recurrence {
 	switch txt := e.rtCombo.GetActiveText(); txt {
