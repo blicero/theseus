@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-24 20:57:12 krylon>
+# Time-stamp: <2022-09-26 18:57:32 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,12 +10,12 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-24 Sa 20:57]
+  #+CAPTION: Clock summary at [2022-09-26 Mo 18:43]
   | Headline                                       | Time       |            |          |          |       |
   |------------------------------------------------+------------+------------+----------+----------+-------|
-  | *Total time*                                   | *9d 10:11* |            |          |          |       |
+  | *Total time*                                   | *9d 10:50* |            |          |          |       |
   |------------------------------------------------+------------+------------+----------+----------+-------|
-  | *Theseus [17/24]*                              | *9d 10:11* |            |          |          |       |
+  | *Theseus [17/24]*                              | *9d 10:50* |            |          |          |       |
   | \_  /Components [15/20]/                       |            | /8d 21:18/ |          |          |       |
   | \_    Recurring Reminders [4/4]                |            |            | 1d 21:44 |          |       |
   | \_      Database schema                        |            |            |          |     1:36 |       |
@@ -41,7 +41,7 @@
   | \_    Other sources [0/2]                      |            |            |  2d 2:29 |          |       |
   | \_      Framework?                             |            |            |          |     3:11 |       |
   | \_      logreader                              |            |            |          | 1d 23:18 |       |
-  | \_  /Cleanup/                                  |            | /8:23/     |          |          |       |
+  | \_  /Cleanup/                                  |            | /9:02/     |          |          |       |
   | \_  /Testing [0/0]/                            |            | /1:30/     |          |          |       |
   | \_    Database                                 |            |            |     1:30 |          |       |
   | \_  /Bugs [3/3]/                               |            | /3:00/     |          |          |       |
@@ -54,7 +54,7 @@
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
   :END:
-** Components [15/20]
+** Components [16/20]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
@@ -300,7 +300,7 @@
      - [X] Edit Reminder
      - [X] Get all Reminders
      - [X] Get pending Reminders
-*** Frontend [4/6]                                                       :ui:
+*** Frontend [5/6]                                                       :ui:
     :LOGBOOK:
     CLOCK: [2022-08-23 Di 19:05]--[2022-08-23 Di 20:18] =>  1:13
     CLOCK: [2022-07-20 Mi 19:40]--[2022-07-20 Mi 21:57] =>  2:17
@@ -337,7 +337,8 @@
      I would /really/ like to have a systray icon.
      A cursory glance to gotk's documentation is not very encouraging,
      though. So for the time being, it's a hard no. Maybe later.
-**** TODO Filtering and Sorting
+**** DONE Filtering and Sorting
+     CLOSED: [2022-09-26 Mo 18:57]
      :LOGBOOK:
      CLOCK: [2022-08-23 Di 20:18]--[2022-08-23 Di 21:38] =>  1:20
      CLOCK: [2022-08-20 Sa 18:48]--[2022-08-20 Sa 22:10] =>  3:22
@@ -409,6 +410,8 @@
      This should keep me busy for a while, too, I think, ... right?
 ** Cleanup                                               :internals:refactor:
    :LOGBOOK:
+   CLOCK: [2022-09-26 Mo 18:17]--[2022-09-26 Mo 18:43] =>  0:26
+   CLOCK: [2022-09-26 Mo 17:06]--[2022-09-26 Mo 17:19] =>  0:13
    CLOCK: [2022-09-24 Sa 17:56]--[2022-09-24 Sa 20:57] =>  3:01
    CLOCK: [2022-09-22 Do 18:18]--[2022-09-22 Do 22:12] =>  3:54
    CLOCK: [2022-07-23 Sa 21:57]--[2022-07-23 Sa 22:11] =>  0:14
