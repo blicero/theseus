@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-24 19:49:24 krylon>
+// Time-stamp: <2022-09-27 21:47:20 krylon>
 
 package ui
 
@@ -280,7 +280,7 @@ func (g *GUI) initMenu() error {
 		srvItem, quitItem, addItem, editItem *gtk.MenuItem
 		fItem, rItem, rrItem, delItem        *gtk.MenuItem
 		hideFinItem                          *gtk.CheckMenuItem
-		syncItem                             *gtk.MenuItem
+		syncItem, refreshItem                *gtk.MenuItem
 	)
 
 	if fMenu, err = gtk.MenuNew(); err != nil {
@@ -330,12 +330,18 @@ func (g *GUI) initMenu() error {
 	} else if syncItem, err = gtk.MenuItemNewWithMnemonic("_Synchronize"); err != nil {
 		g.log.Printf("[ERROR] Cannot create menu item SYNC: %s\n",
 			err.Error())
+		return err
+	} else if refreshItem, err = gtk.MenuItemNewWithMnemonic("Re_fresh"); err != nil {
+		g.log.Printf("[ERROR] Cannot create menu item REFRESH: %s\n",
+			err.Error())
+		return err
 	}
 
 	quitItem.Connect("activate", gtk.MainQuit)
 	srvItem.Connect("activate", g.setServer)
 	addItem.Connect("activate", g.reminderAdd)
 	editItem.Connect("activate", g.reminderEdit)
+	refreshItem.Connect("activate", g.refreshReminders)
 	rrItem.Connect("activate", g.reminderReactivate)
 	delItem.Connect("activate", g.reminderDelete)
 	hideFinItem.Connect("activate", g.reminderHideFinished)
@@ -345,6 +351,7 @@ func (g *GUI) initMenu() error {
 	fMenu.Append(quitItem)
 	rMenu.Append(addItem)
 	rMenu.Append(editItem)
+	rMenu.Append(refreshItem)
 	rMenu.Append(rrItem)
 	rMenu.Append(delItem)
 	rMenu.Append(syncItem)
@@ -1751,6 +1758,22 @@ func (g *GUI) synchronize() {
 	g.pushMsg(msg)
 	g.log.Printf("[INFO] %s\n", msg)
 } // func (g *GUI) synchronize()
+
+func (g *GUI) refreshReminders() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	for k := range g.reminders {
+		delete(g.reminders, k)
+	}
+
+	g.store.Clear()
+
+	glib.IdleAdd(func() bool {
+		g.fetchReminders()
+		return false
+	})
+} // func (g *GUI) refreshReminders()
 
 func (g *GUI) spawnBackend() {
 	g.lock.Lock()
