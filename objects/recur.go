@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-23 10:20:34 krylon>
+// Time-stamp: <2022-09-27 22:06:27 krylon>
 
 //go:generate ffjson recur.go
 
@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blicero/theseus/common"
 	"github.com/blicero/theseus/objects/repeat"
 )
 
@@ -138,6 +139,10 @@ func (a *Recurrence) String() string {
 } // func (a *Alarmclock) String() string
 
 func fmtOffset(off int) string {
+	if off > 86399 {
+		return time.Unix(int64(off), 0).Format(common.TimestampFormat)
+	}
+
 	var h, m, s int
 
 	if off > 3600 {
