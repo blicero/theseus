@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-27 21:47:20 krylon>
+// Time-stamp: <2022-09-28 18:56:16 krylon>
 
 package ui
 
@@ -380,6 +380,8 @@ func (g *GUI) initTree() error {
 
 	g.filter.SetVisibleFunc(g.reminderFilterFn)
 	g.view.SetModel(g.filter)
+
+	g.view.Connect("button-press-event", g.handleReminderClick)
 
 	if sel, err = g.view.GetSelection(); err != nil {
 		g.log.Printf("[ERROR] Cannot get TreeSelection: %s\n",
