@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 10. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-26 18:29:03 krylon>
+// Time-stamp: <2022-09-29 19:22:58 krylon>
 
 package ui
 
@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 
 	"github.com/blicero/theseus/objects"
 	"github.com/blicero/theseus/objects/repeat"
@@ -82,7 +81,7 @@ func NewRecurEditor(r *objects.Recurrence, l *log.Logger) (*RecurEditor, error) 
 		e.log.Printf("[ERROR] Cannot create gtk.ComboBoxText: %s\n",
 			err.Error())
 		return nil, err
-	} else if e.cntEdit, err = gtk.SpinButtonNewWithRange(0, math.Inf(1), 1); err != nil {
+	} else if e.cntEdit, err = gtk.SpinButtonNewWithRange(0, 2.5e12, 1); err != nil {
 		e.log.Printf("[ERROR] Cannot create gtk.SpinButton: %s\n",
 			err.Error())
 		return nil, err

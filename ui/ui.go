@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-28 18:56:16 krylon>
+// Time-stamp: <2022-09-29 18:41:17 krylon>
 
 package ui
 
@@ -37,15 +37,16 @@ import (
 var icon []byte
 
 const (
-	defaultBufSize        = 65536 // 64 KiB
-	msgID                 = 666
-	maxSpawnAttempts      = 3
-	uriGetAll             = "/reminder/all"
-	uriReminderAdd        = "/reminder/add"
-	uriReminderDelete     = "/reminder/%d/delete"
-	uriReminderEdit       = "/reminder/%d/update"
-	uriReminderReactivate = "/reminder/%d/reactivate"
-	uriPeerListGet        = "/peer/all"
+	defaultBufSize         = 65536 // 64 KiB
+	msgID                  = 666
+	maxSpawnAttempts       = 3
+	uriGetAll              = "/reminder/all"
+	uriReminderAdd         = "/reminder/add"
+	uriReminderDelete      = "/reminder/%d/delete"
+	uriReminderEdit        = "/reminder/%d/update"
+	uriReminderReactivate  = "/reminder/%d/reactivate"
+	uriReminderSetFinished = "/reminder/%d/set_finished/%t"
+	uriPeerListGet         = "/peer/all"
 )
 
 type column struct {

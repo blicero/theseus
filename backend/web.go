@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-24 20:53:48 krylon>
+// Time-stamp: <2022-09-29 18:39:31 krylon>
 
 package backend
 
@@ -30,6 +30,7 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/update", d.handleReminderUpdate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/reactivate", d.handleReminderReactivate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/delete", d.handleReminderDelete)
+	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/set_finished/{flag:(?i:\\w+)}", d.handleReminderSetFinished)
 	d.router.HandleFunc("/peer/all", d.handlePeerListGet)
 	d.router.HandleFunc("/sync/pull", d.handleReminderSyncPull)
 	d.router.HandleFunc("/sync/push", d.handleReminderSyncPush)
@@ -496,7 +497,88 @@ SEND_RESPONSE:
 	}
 
 	d.sendResponseJSON(w, &res)
-} // func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.request)
+} // func (d *Daemon) handleReminderReactivate(w http.ResponseWriter, r *http.Request)
+
+func (d *Daemon) handleReminderSetFinished(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+
+	var (
+		err                 error
+		vars                map[string]string
+		idstr, msg, flagStr string
+		id                  int64
+		flag                bool
+		db                  *database.Database
+		rem                 *objects.Reminder
+		res                 = objects.Response{ID: d.getID()}
+	)
+
+	vars = mux.Vars(r)
+
+	idstr = vars["id"]
+	flagStr = vars["flag"]
+
+	if id, err = strconv.ParseInt(idstr, 10, 64); err != nil {
+		msg = fmt.Sprintf("Cannot parse ID %q: %s",
+			idstr,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if flag, err = strconv.ParseBool(flagStr); err != nil {
+		msg = fmt.Sprintf("Cannot parse Flag %q: %s",
+			flagStr,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Message = msg
+		goto SEND_RESPONSE
+	}
+
+	db = d.pool.Get()
+	defer d.pool.Put(db)
+
+	if err = db.Begin(); err != nil {
+		msg = fmt.Sprintf("Cannot start DB transaction: %s",
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		goto SEND_RESPONSE
+	} else if rem, err = db.ReminderGetByID(id); err != nil {
+		msg = fmt.Sprintf("Cannot get Reminder #%d from DB: %s",
+			id,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		goto SEND_RESPONSE
+	} else if rem.Finished == flag {
+		msg = fmt.Sprintf("Reminder's Finished flag is already %t",
+			flag)
+		d.log.Printf("[ERROR] %s\n", msg)
+		res.Status = true
+		res.Message = msg
+		goto SEND_RESPONSE
+	} else if err = db.ReminderSetFinished(rem, flag); err != nil {
+		msg = fmt.Sprintf("Cannot set Finished flag for Reminder %q (%d) to %t: %s\n",
+			rem.Title,
+			rem.ID,
+			flag,
+			err.Error())
+		d.log.Printf("[ERROR] %s\n", msg)
+		goto SEND_RESPONSE
+	} else {
+		res.Status = true
+		res.Message = "Success"
+	}
+
+SEND_RESPONSE:
+	if res.Status {
+		db.Commit() // nolint: errcheck
+	} else {
+		db.Rollback() // nolint: errcheck
+	}
+
+	d.sendResponseJSON(w, &res)
+} // func (d *Daemon) handleReminderSetFinished(w http.ResponseWriter, r *http.request)
 
 func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request) {
 	d.log.Printf("[TRACE] Handle %s from %s\n",
