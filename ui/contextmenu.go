@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 28. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-29 19:05:12 krylon>
+// Time-stamp: <2022-09-30 18:24:30 krylon>
 
 package ui
 
@@ -419,6 +419,7 @@ BEGIN:
 			0,
 			time.Local)
 	} else {
+		r.Recur = recEdit.GetRecurrence()
 		r.Timestamp = time.Unix(int64(r.Recur.Offset), 0).In(time.UTC)
 	}
 
@@ -492,6 +493,24 @@ BEGIN:
 
 		tstr = r.Timestamp.Format(common.TimestampFormat)
 		cstr = r.Changed.Format(common.TimestampFormat)
+
+		if !g.store.IterIsValid(iter) {
+			g.log.Printf("[ERROR] TreeIter for Reminder %q (%d) is no longer valid\n",
+				r.Title,
+				r.ID)
+			if iter, err = g.getIter(r.ID); err != nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d): %s\n",
+					r.Title,
+					r.ID,
+					err.Error())
+				return
+			} else if iter == nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d)\n",
+					r.Title,
+					r.ID)
+				return
+			}
+		}
 
 		g.store.Set( // nolint: errcheck
 			iter,
@@ -606,6 +625,7 @@ func (g *GUI) handleReminderClickDelete() {
 		response)
 
 	if response.Status {
+		iter, _ = g.getIter(id)
 		delete(g.reminders, id)
 		g.store.Remove(iter)
 	} else {

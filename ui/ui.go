@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-29 18:41:17 krylon>
+// Time-stamp: <2022-09-30 18:02:49 krylon>
 
 package ui
 
@@ -1210,6 +1210,7 @@ BEGIN:
 			0,
 			time.Local)
 	} else {
+		r.Recur = recEdit.GetRecurrence()
 		r.Timestamp = time.Unix(int64(r.Recur.Offset), 0).In(time.UTC)
 	}
 
@@ -1283,6 +1284,24 @@ BEGIN:
 
 		tstr = r.Timestamp.Format(common.TimestampFormat)
 		cstr = r.Changed.Format(common.TimestampFormat)
+
+		if !g.store.IterIsValid(iter) {
+			g.log.Printf("[ERROR] TreeIter for Reminder %q (%d) is no longer valid\n",
+				r.Title,
+				r.ID)
+			if iter, err = g.getIter(r.ID); err != nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d): %s\n",
+					r.Title,
+					r.ID,
+					err.Error())
+				return
+			} else if iter == nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d)\n",
+					r.Title,
+					r.ID)
+				return
+			}
+		}
 
 		g.store.Set( // nolint: errcheck
 			iter,
@@ -1389,6 +1408,23 @@ func (g *GUI) reminderReactivate() {
 		r.Finished = false
 		r.Changed = time.Now()
 		g.reminders[id] = r
+		if !g.store.IterIsValid(iter) {
+			g.log.Printf("[ERROR] TreeIter for Reminder %q (%d) is no longer valid\n",
+				r.Title,
+				r.ID)
+			if iter, err = g.getIter(r.ID); err != nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d): %s\n",
+					r.Title,
+					r.ID,
+					err.Error())
+				return
+			} else if iter == nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d)\n",
+					r.Title,
+					r.ID)
+				return
+			}
+		}
 		g.store.Set( // nolint: errcheck
 			iter,
 			[]int{3, 5},
@@ -1495,7 +1531,25 @@ func (g *GUI) reminderDelete() {
 		response)
 
 	if response.Status {
+		var r = g.reminders[id]
 		delete(g.reminders, id)
+		if !g.store.IterIsValid(iter) {
+			g.log.Printf("[ERROR] TreeIter for Reminder %q (%d) is no longer valid\n",
+				r.Title,
+				r.ID)
+			if iter, err = g.getIter(r.ID); err != nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d): %s\n",
+					r.Title,
+					r.ID,
+					err.Error())
+				return
+			} else if iter == nil {
+				g.log.Printf("[ERROR] Could not find TreeIter for Reminder %q (%d)\n",
+					r.Title,
+					r.ID)
+				return
+			}
+		}
 		g.store.Remove(iter)
 	} else {
 		g.log.Printf("[ERROR] Failed to delete Reminder %q in backend: %s\n",
