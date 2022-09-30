@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-30 18:02:49 krylon>
+// Time-stamp: <2022-09-30 20:21:55 krylon>
 
 package ui
 
@@ -237,6 +237,7 @@ func Create(srv string) (*GUI, error) {
 	win.mainBox.PackStart(win.statusbar, false, false, 1)
 
 	win.win.Connect("destroy", gtk.MainQuit)
+	// win.win.Connect("key-press-event", win.handleKeyPressEvent)
 
 	if err = win.initTree(); err != nil {
 		win.log.Printf("[ERROR] Failed to initialize TreeView: %s\n",
@@ -1873,3 +1874,40 @@ func (g *GUI) spawnBackend() {
 		}
 	}()
 } // func (g *GUI) spawnBackend()
+
+// func (g *GUI) handleKeyPressEvent(w *gtk.Window, evt *gdk.Event) {
+// 	var (
+// 		ke          = gdk.EventKeyNewFromEvent(evt)
+// 		key, action string
+// 	)
+
+// 	switch t := ke.Type(); t {
+// 	case gdk.EVENT_KEY_PRESS:
+// 		action = "pressed"
+// 	case gdk.EVENT_KEY_RELEASE:
+// 		action = "released"
+// 	default:
+// 		action = "glorbulated"
+// 	}
+
+// 	switch k := ke.KeyVal(); k {
+// 	case gdk.KEY_Q:
+// 		key = "Q"
+// 	case gdk.KEY_q:
+// 		key = "q"
+// 	case gdk.KEY_X:
+// 		key = "X"
+// 	case gdk.KEY_x:
+// 		key = "x"
+// 	default:
+// 		key = "(unknown)"
+
+// 	}
+
+// 	var msg = fmt.Sprintf("Key %s was %s",
+// 		key,
+// 		action)
+// 	g.log.Printf("[DEBUG] %s\n",
+// 		msg)
+// 	g.pushMsg(msg)
+// } // func (g *GUI) handleKeyPressEvent(evt *gdk.EventKey)
