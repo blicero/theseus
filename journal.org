@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-29 19:54:46 krylon>
+# Time-stamp: <2022-09-30 18:29:08 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,13 +10,13 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-29 Do 19:54]
+  #+CAPTION: Clock summary at [2022-09-30 Fr 18:29]
   | Headline                                       | Time       |           |          |          |       |
   |------------------------------------------------+------------+-----------+----------+----------+-------|
-  | *Total time*                                   | *9d 16:30* |           |          |          |       |
+  | *Total time*                                   | *9d 17:36* |           |          |          |       |
   |------------------------------------------------+------------+-----------+----------+----------+-------|
-  | *Theseus [17/24]*                              | *9d 16:30* |           |          |          |       |
-  | \_  /Components [16/21]/                       |            | /9d 2:58/ |          |          |       |
+  | *Theseus [17/24]*                              | *9d 17:36* |           |          |          |       |
+  | \_  /Components [17/21]/                       |            | /9d 4:04/ |          |          |       |
   | \_    Recurring Reminders [4/4]                |            |           | 1d 21:44 |          |       |
   | \_      Database schema                        |            |           |          |     1:36 |       |
   | \_      Display Recurrences                    |            |           |          |     1:29 |       |
@@ -33,8 +33,8 @@
   | \_      Testing                                |            |           |          |     0:35 |       |
   | \_      Notifications                          |            |           |          |    12:12 |       |
   | \_      HTTP API                               |            |           |          |     5:30 |       |
-  | \_    Frontend [5/7]                           |            |           | 2d 15:59 |          |       |
-  | \_      Context menu                           |            |           |          |     5:40 |       |
+  | \_    Frontend [6/7]                           |            |           | 2d 17:05 |          |       |
+  | \_      Context menu                           |            |           |          |     6:46 |       |
   | \_      Server on-demand                       |            |           |          |     1:39 |       |
   | \_      Icon                                   |            |           |          |     0:36 |       |
   | \_      Filtering and Sorting                  |            |           |          |     7:43 |       |
@@ -55,7 +55,7 @@
   :COOKIE_DATA: todo recursive
   :VISIBILITY: children
   :END:
-** Components [16/21]
+** Components [17/21]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
@@ -301,7 +301,7 @@
      - [X] Edit Reminder
      - [X] Get all Reminders
      - [X] Get pending Reminders
-*** Frontend [5/7]                                                       :ui:
+*** Frontend [6/7]                                                       :ui:
     :LOGBOOK:
     CLOCK: [2022-08-23 Di 19:05]--[2022-08-23 Di 20:18] =>  1:13
     CLOCK: [2022-07-20 Mi 19:40]--[2022-07-20 Mi 21:57] =>  2:17
@@ -319,8 +319,11 @@
     CLOCK: [2022-07-07 Do 22:38]--[2022-07-07 Do 22:50] =>  0:12
     CLOCK: [2022-07-07 Do 18:25]--[2022-07-07 Do 21:15] =>  2:50
     :END:
-**** TODO Context menu
+**** DONE Context menu
+     CLOSED: [2022-09-30 Fr 18:27]
      :LOGBOOK:
+     CLOCK: [2022-09-30 Fr 17:22]--[2022-09-30 Fr 18:27] =>  1:05
+     CLOCK: [2022-09-30 Fr 17:01]--[2022-09-30 Fr 17:02] =>  0:01
      CLOCK: [2022-09-29 Do 16:32]--[2022-09-29 Do 19:54] =>  3:22
      CLOCK: [2022-09-28 Mi 18:37]--[2022-09-28 Mi 20:55] =>  2:18
      :END:
