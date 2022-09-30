@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-27 22:06:27 krylon>
+// Time-stamp: <2022-09-30 17:45:45 krylon>
 
 //go:generate ffjson recur.go
 
@@ -77,7 +77,6 @@ type Recurrence struct {
 	Limit   int
 	Counter int
 	UUID    string
-	Changed time.Time
 }
 
 // Go's time package has a type Weekday, too, can I use that somehow?
