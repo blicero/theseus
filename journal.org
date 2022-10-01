@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-09-30 20:21:22 krylon>
+# Time-stamp: <2022-10-01 19:51:00 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -10,13 +10,13 @@
 #+PRIORITIES: A G D
 * Clock
   #+BEGIN: clocktable :scope file :maxlevel 200 :emphasize t
-  #+CAPTION: Clock summary at [2022-09-30 Fr 20:21]
+  #+CAPTION: Clock summary at [2022-10-01 Sa 19:50]
   | Headline                                       | Time       |           |          |          |       |
   |------------------------------------------------+------------+-----------+----------+----------+-------|
-  | *Total time*                                   | *9d 19:08* |           |          |          |       |
+  | *Total time*                                   | *9d 20:59* |           |          |          |       |
   |------------------------------------------------+------------+-----------+----------+----------+-------|
-  | *Theseus [17/24]*                              | *9d 19:08* |           |          |          |       |
-  | \_  /Components [18/21]/                       |            | /9d 5:36/ |          |          |       |
+  | *Theseus [17/24]*                              | *9d 20:59* |           |          |          |       |
+  | \_  /Components [18/21]/                       |            | /9d 7:27/ |          |          |       |
   | \_    Recurring Reminders [4/4]                |            |           | 1d 21:44 |          |       |
   | \_      Database schema                        |            |           |          |     1:36 |       |
   | \_      Display Recurrences                    |            |           |          |     1:29 |       |
@@ -24,7 +24,8 @@
   | \_      Handle Recurrences                     |            |           |          |  1d 8:38 |       |
   | \_        Track notifications for recurring... |            |           |          |          | 12:25 |
   | \_    Data types                               |            |           |     1:04 |          |       |
-  | \_    Database                                 |            |           |     2:38 |          |       |
+  | \_    Database [0/1]                           |            |           |     4:29 |          |       |
+  | \_      Clean up old Notifications             |            |           |          |     1:51 |       |
   | \_    Networking [3/3]                         |            |           |  1d 7:10 |          |       |
   | \_      mDNS [1/1]                             |            |           |          |    14:08 |       |
   | \_        Cache invalidation                   |            |           |          |          |  3:49 |
@@ -151,12 +152,23 @@
     CLOCK: [2022-07-01 Fr 17:48]--[2022-07-01 Fr 17:51] =>  0:03
     CLOCK: [2022-06-30 Do 22:10]--[2022-06-30 Do 23:11] =>  1:01
     :END:
-*** Database                                                       :database:
+*** Database [0/1]                                                 :database:
+    :PROPERTIES:
+    :COOKIE_DATA: todo recursive
+    :VISIBILITY: children
+    :END:
     :LOGBOOK:
     CLOCK: [2022-07-01 Fr 17:51]--[2022-07-01 Fr 20:08] =>  2:17
     CLOCK: [2022-06-30 Do 23:11]--[2022-06-30 Do 23:32] =>  0:21
     :END:
     Pretty sure I'll use sqlite.
+**** TODO Clean up old Notifications
+     :LOGBOOK:
+     CLOCK: [2022-10-01 Sa 17:59]--[2022-10-01 Sa 19:50] =>  1:51
+     :END:
+     See, I came up with an SQL query that seems to work, but I'm not at the
+     point where the database is so big it is cumbersome, so I'll delay this
+     for now.
 *** GUI                                                                  :ui:
     I /could/ use Gtk, or I could be adventurous and use fyne. I tried it
     before, and it did not work out well, but on the plus side, it is native
