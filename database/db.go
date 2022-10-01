@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-23 16:38:51 krylon>
+// Time-stamp: <2022-10-01 18:39:12 krylon>
 
 // Package database provides persistence for the application's data.
 package database
@@ -784,7 +784,82 @@ EXEC_QUERY:
 	}
 
 	return items, nil
-} // func (db *Database) ReminderGetPending() ([]objects.Reminder, error)
+} // func (db *Database) ReminderGetPending(t time.Time) ([]objects.Reminder, error)
+
+// ReminderGetPendingWithNotifications fetches all Reminder entries from the database
+// that have not been marked as finished.
+func (db *Database) ReminderGetPendingWithNotifications(t time.Time) ([]objects.Reminder, error) {
+	const qid query.ID = query.ReminderGetPendingWithNotifications
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		db.log.Printf("[ERROR] Failed to load pending Reminders: %s\n",
+			err.Error())
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var items = make([]objects.Reminder, 0)
+	var now = time.Now().Truncate(time.Minute)
+
+	for rows.Next() {
+		var (
+			stamp, changed, days int64
+			r                    objects.Reminder
+		)
+
+		if err = rows.Scan(
+			&r.ID,
+			&r.Title,
+			&r.Description,
+			&stamp,
+			&r.Recur.Repeat,
+			&days,
+			&r.Recur.Counter,
+			&r.Recur.Limit,
+			&r.UUID,
+			&changed); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		r.Timestamp = time.Unix(stamp, 0)
+		r.Changed = time.Unix(changed, 0)
+		for i := 0; i < 7; i++ {
+			r.Recur.Days[i] = (days & (1 << i)) != 0
+		}
+
+		r.Recur.Offset = int(stamp)
+
+		if r.Recur.Repeat != repeat.Once || r.DueNext(&now).Before(t) {
+			items = append(items, r)
+		}
+	}
+
+	return items, nil
+} // func (db *Database) ReminderGetPendingWithNotifications(t time.Time) ([]objects.Reminder, error)
 
 // ReminderGetAll retrieves all Reminders from the database.
 func (db *Database) ReminderGetAll() ([]objects.Reminder, error) {
@@ -2309,3 +2384,87 @@ EXEC_QUERY:
 
 	return items, nil
 } // func (db *Database) NotificationGetPending() ([]objects.Notification, error)
+
+// NotificationCleanup removes stale notifications from the database
+// that are more than a week old and have either been acknowledged
+// at least a week ago or never displayed in the first place.
+func (db *Database) NotificationCleanup() (int64, error) {
+	const qid query.ID = query.NotificationCleanup
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return 0, err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return 0, errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot clean up Notifications: %s",
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return 0, err
+		}
+	}
+
+	defer rows.Close() // nolint: errcheck
+	var cnt int64
+
+	for rows.Next() {
+		var n int64
+
+		if err = rows.Scan(&n); err != nil {
+			db.log.Printf("[ERROR] Cannot scan Counter from Rows: %s\n",
+				err.Error())
+			return 0, err
+		} else if n > 0 {
+			cnt += n
+		}
+	}
+
+	status = true
+	return cnt, nil
+} // func (db *Database) NotificationCleanup() (int64, error)

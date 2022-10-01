@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-21 18:58:14 krylon>
+// Time-stamp: <2022-10-01 18:37:32 krylon>
 
 package database
 
@@ -28,6 +28,32 @@ SELECT
     changed
 FROM reminder
 WHERE finished = 0
+ORDER BY due, title
+`,
+	query.ReminderGetPendingWithNotifications: `
+WITH ncnt AS (
+    SELECT
+        reminder_id,
+        COUNT(reminder_id) AS cnt
+    FROM notification
+    WHERE acknowledged IS NULL AND timestamp < unixepoch()
+    GROUP BY reminder_id
+)
+
+SELECT
+    r.id,
+    r.title,
+    r.description,
+    r.due,
+    r.repeat,
+    r.weekdays,
+    r.counter,
+    r.counter_max,
+    r.uuid,
+    r.changed
+FROM reminder r
+LEFT OUTER JOIN ncnt AS n ON (n.reminder_id = r.id)
+WHERE r.finished = 0 OR COALESCE(n.cnt, 0) > 0
 ORDER BY due, title
 `,
 	query.ReminderGetFinished: `
@@ -192,5 +218,12 @@ SELECT
 FROM notification
 WHERE acknowledged IS NULL
 ORDER BY timestamp
+`,
+	query.NotificationCleanup: `
+DELETE FROM notification
+WHERE (timestamp < unixepoch() - 86400 * 7) AND
+      ((acknowledged < unixepoch() - 86400 * 7) OR
+       (displayed IS NULL AND acknowledged IS NULL))
+RETURNING 1
 `,
 }
