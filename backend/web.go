@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 04. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-29 18:39:31 krylon>
+// Time-stamp: <2022-10-01 19:47:15 krylon>
 
 package backend
 
@@ -31,6 +31,7 @@ func (d *Daemon) initWebHandlers() error {
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/reactivate", d.handleReminderReactivate)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/delete", d.handleReminderDelete)
 	d.router.HandleFunc("/reminder/{id:(?:\\d+)}/set_finished/{flag:(?i:\\w+)}", d.handleReminderSetFinished)
+
 	d.router.HandleFunc("/peer/all", d.handlePeerListGet)
 	d.router.HandleFunc("/sync/pull", d.handleReminderSyncPull)
 	d.router.HandleFunc("/sync/push", d.handleReminderSyncPush)
@@ -56,6 +57,12 @@ func (d *Daemon) serveHTTP() {
 		}
 	}
 } // func (d *Daemon) serveHTTP()
+
+func (d *Daemon) handleDBMaintenance(w http.ResponseWriter, r *http.Request) {
+	d.log.Printf("[TRACE] Handle %s from %s\n",
+		r.URL,
+		r.RemoteAddr)
+} // func (d *Daemon) handleDBMaintenance(w http.ResponseWriter, r *http.Request)
 
 func (d *Daemon) handleReminderAdd(w http.ResponseWriter, r *http.Request) {
 	d.log.Printf("[TRACE] Handle %s from %s\n",
@@ -642,7 +649,6 @@ SEND_RESPONSE:
 	d.sendResponseJSON(w, &res)
 } // func (d *Daemon) handleReminderDelete(w http.ResponseWriter, r *http.Request)
 
-// nolint: unused
 func (d *Daemon) handleReminderSyncPull(w http.ResponseWriter, r *http.Request) {
 	d.log.Printf("[TRACE] Handle %s from %s\n",
 		r.URL,

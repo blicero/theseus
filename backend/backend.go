@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 07. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-09-24 20:25:10 krylon>
+// Time-stamp: <2022-10-01 19:04:04 krylon>
 
 // Package backend implements the ... backend of the application,
 // the part that deals with the database and dbus.
@@ -266,7 +266,7 @@ func (d *Daemon) notifyLoop() {
 				}
 			case "org.freedesktop.Notifications.ActionInvoked":
 				var action = n.Body[1].(string)
-				// ... We'll have to deal with it in some way. ;-|
+
 				d.log.Printf("[DEBUG] User clicked %s\n",
 					action)
 
@@ -669,15 +669,19 @@ func (d *Daemon) dbCheck() error {
 	db = d.pool.Get()
 	defer d.pool.Put(db)
 
-	if reminders, err = db.ReminderGetPending(deadline); err != nil {
+	if reminders, err = db.ReminderGetPendingWithNotifications(deadline); err != nil {
 		d.log.Printf("[ERROR] Cannot get pending Reminders from Database: %s\n",
 			err.Error())
 		return err
 	}
 
-	for idx := range reminders {
-		if _, ok := d.getNotificationID(reminders[idx].ID); !ok {
+	for idx, r := range reminders {
+		if _, ok := d.getNotificationID(r.ID); !ok {
 			d.Queue <- &reminders[idx]
+		} else if common.Debug {
+			d.log.Printf("[TRACE] Notification for Reminder %q (%d) is already on display\n",
+				r.Title,
+				r.ID)
 		}
 	}
 
